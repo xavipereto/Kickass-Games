@@ -559,7 +559,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
         <h2>PAUSA</h2>
         <button id="resume" class="go" type="button">SEGUIR</button>
         <button id="quit" class="go alt" type="button">SALIR AL MENÚ</button>
-        <button id="showCtrl" class="go alt" type="button" style="font-size:16px">CONTROLES</button>
+        <button id="showCtrl" class="go alt" type="button">CONTROLES</button>
         <div id="pauseCtrl" class="how" hidden>
           <div class="keys pctrl"></div>
         </div>
@@ -1754,7 +1754,7 @@ function applyUI(){
   r.setProperty('--i-cap','url("'+TXT_IMG.cap+'")');if(typeof DEFEAT_BG!=='undefined')r.setProperty('--i-defeat-bg','url("'+DEFEAT_BG+'")');r.setProperty('--i-defeat-title','url("'+TXT_IMG.b_sinaliento+'")');
   const W_=(k,alt,cls)=>'<img class="wimg '+(cls||'')+'" alt="'+alt+'" src="'+TXT_IMG[k]+'">';
   const setB=(sel,k,alt,cls)=>{const b=$(sel);if(!b)return;b.innerHTML=W_(k,alt,cls);b.classList.add('imgbtn');b.setAttribute('aria-label',alt)};
-  setB('#play','b_jugar','Jugar','big');{const h=$('#hubPlay');h.innerHTML=W_('b_jugar','Jugar');h.setAttribute('aria-label','Jugar');const r=$('#hubRank');r.innerHTML=W_('b_ranking','Ranking');r.setAttribute('aria-label','Ranking')}setB('#again','b_otravez','Otra vez');setB('#toMenu','b_menu','Menú','sm');setB('#resume','b_seguir','Seguir');setB('#quit','b_menu','Salir al menú','sm');
+  setB('#play','b_jugar','Jugar','big');{const h=$('#hubPlay');h.innerHTML=W_('b_jugar','Jugar');h.setAttribute('aria-label','Jugar');const r=$('#hubRank');r.innerHTML=W_('b_ranking','Ranking');r.setAttribute('aria-label','Ranking')}setB('#again','b_otravez','Otra vez');setB('#toMenu','b_menu','Menú','sm');setB('#resume','b_seguir','Seguir');setB('#quit','b_menu','Salir al menú','sm');setB('#showCtrl','g_ctrl','Controles','sm');
   const ph=$('#pause h2');if(ph)ph.innerHTML=W_('b_pausa','Pausa','hd');
   const rk0=$('#rkT');if(rk0)rk0.outerHTML=W_('b_ranking','Ranking','ttl');
   const rk=$('#rkT2');if(rk)rk.innerHTML=W_('b_ranking','Ranking','hd');
