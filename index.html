@@ -646,13 +646,15 @@ document.querySelectorAll('#pad .pb').forEach(b=>{
 });
 /* mando físico (Gamepad API, mapeo estándar): A barra · B esquiva · X mancuerna · Y wall ball · R1 cambio · L1 foto · Start pausa · Select controles */
 const GP_MAP={0:'z',1:'dodge',2:'x',3:'c',4:'v',5:'swap',12:'up',13:'down',14:'left',15:'right'};let gpPrev={};
+/* mandos Nintendo (Switch Pro, Joy-Con, 8BitDo en modo Switch): el botón con la letra A está a la derecha → se respeta la letra impresa */
+function gpNin(gp){return /057e|nintendo|pro controller|joy-con|8bitdo/i.test(gp.id||'')}
 function pollPad(){const pads=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const p of pads)if(p&&p.connected){gp=p;break}
   if(!gp){PAD.x=PAD.y=0;return}
   const ax=gp.axes[0]||0,ay=gp.axes[1]||0,dz=.2;PAD.x=Math.abs(ax)>dz?ax:0;PAD.y=Math.abs(ay)>dz?ay:0;
   const any=gp.buttons.some(b=>b.pressed)||PAD.x||PAD.y;if(any&&app.classList.contains('touch'))setInputMode('keys');
   gp.buttons.forEach((b,i)=>{const was=gpPrev[i],is=b.pressed;gpPrev[i]=is;if(is===was)return;
     if(i===9){if(is)padSpecial('start');return}if(i===8){if(is)padSpecial('select');return}
-    const k=GP_MAP[i];if(!k)return;if(is){if(mode==='play')pressK(k)}else releaseK(k)});
+    const k=GP_MAP[gpNin(gp)?({0:1,1:0,2:3,3:2}[i]??i):i];if(!k)return;if(is){if(mode==='play')pressK(k)}else releaseK(k)});
   const s2={l:PAD.x<-.55,r:PAD.x>.55};if(s2.l&&!gpPrev.al)edge.left=true;if(s2.r&&!gpPrev.ar)edge.right=true;gpPrev.al=s2.l;gpPrev.ar=s2.r}
 
 /* ---------- lienzo ---------- */
