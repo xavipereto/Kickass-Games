@@ -316,6 +316,18 @@ html:fullscreen,html:fullscreen body{background:#000;width:100%;height:100%}
   .gm[data-page="hub"] .mtop .logoimg{height:auto;width:92%;max-height:30vh}
 }
 @media (max-width:620px){.pbody.cards .opt>span{font-size:15px}.ctrlgrid{grid-template-columns:1fr}}
+.instbtn{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:calc(12px + env(safe-area-inset-top,0px));z-index:41;font-family:var(--display);font-size:14px;letter-spacing:.04em;color:#1a0f00;background:var(--sun);border:2px solid #000;border-radius:999px;padding:9px 14px;box-shadow:0 3px 0 #000;cursor:pointer}
+.instbtn.inhub{position:static;margin-top:clamp(6px,2vh,16px);font-size:13px;padding:7px 12px}
+.instbtn[hidden]{display:none}
+#install{position:fixed;inset:0;z-index:2147483600;background:#000c;display:flex;align-items:center;justify-content:center;padding:20px}
+#install[hidden]{display:none}
+#install .ibox{background:#0b2233;border:3px solid var(--cyan);border-radius:14px;max-width:420px;width:100%;padding:20px 18px;text-align:center;color:#fff;font-family:var(--ui);font-size:18px;line-height:1.35;box-shadow:0 10px 40px #000}
+#install .ilogo{width:84px;height:84px;border-radius:18px;display:block;margin:0 auto 10px}
+#install h3{font-family:var(--display);color:var(--sun);font-size:22px;margin:0 0 12px}
+#install ol{text-align:left;margin:0 0 16px;padding-left:24px}#install li{margin:8px 0}#install b{color:var(--sun)}
+#install .ish{display:inline-block;width:22px;height:22px;vertical-align:-4px;border:2px solid #4fe3df;border-radius:4px;position:relative}
+#install .ish::after{content:"↑";position:absolute;left:0;right:0;top:-6px;color:#4fe3df;font-weight:700;text-align:center}
+#install .iok{font-family:var(--display);font-size:18px;background:var(--sun);color:#1a0f00;border:2px solid #000;border-radius:10px;padding:10px 26px;box-shadow:0 3px 0 #000;cursor:pointer}
 .fsall{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:40;width:44px;height:44px;border-radius:8px;border:2px solid var(--sun);background:#000b;color:#fff;font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .fsall:hover{background:var(--sun);color:#1a0f00}
 .playing .fsall{display:none}
@@ -403,6 +415,16 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
     <div class="start">PULSA START</div>
     <div class="foot">CrossFit Lynx · Sant Cugat del Vallès</div>
     <div class="flash"></div>
+    <button type="button" class="instbtn" hidden>📲 INSTALAR</button>
+  </div>
+  <!-- INSTALAR (acceso directo en la pantalla de inicio) -->
+  <div id="install" hidden role="dialog" aria-label="Instalar el juego">
+    <div class="ibox">
+      <img class="ilogo" src="icon-192.png" alt="" onerror="this.remove()">
+      <h3>Instala KickAss Games</h3>
+      <div class="isteps"></div>
+      <button type="button" class="iok">ENTENDIDO</button>
+    </div>
   </div>
   <!-- DERROTA -->
   <div id="defeat" hidden role="dialog" aria-label="Derrota">
@@ -425,6 +447,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
           <button class="hbtn" type="button" data-go="rank" id="hubRank"></button>
           <button class="hbtn" type="button" data-go="ctrl" id="hubCtrl"><span class="gtxt">CONTROLES</span></button>
           <button class="hbtn" type="button" data-go="snd" id="hubSnd"><span class="gtxt">SONIDO</span></button>
+          <button type="button" class="instbtn inhub" hidden>📲 INSTALAR</button>
         </nav>
       </section>
 
@@ -1888,6 +1911,33 @@ function resultsDecor(done){
   const U=UI_IMG;document.documentElement.style.setProperty('--i-res','url("'+(done?U.win:U.lose)+'")');
   const p=PAIR_POR[G.o.pair]||PAIR_POR.X;$('#rPair').innerHTML=p.map(k=>'<img alt="" src="'+U[k]+'">').join('');
 }
+
+/* ===== INSTALAR como acceso directo (pantalla de inicio) =====
+   Android/ordenador (Chrome, Edge): botón que abre el aviso nativo de instalación.
+   iPhone/iPad: Apple no deja instalar con un botón → pantalla con los pasos (Compartir → Añadir a pantalla de inicio).
+   Enlace directo para compartir: …/Kickass-Games/?instalar  (abre los pasos al entrar). */
+const INST={ev:null};
+function instStandalone(){try{return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true}catch(e){return false}}
+function instIOS(){const u=navigator.userAgent||'';return /iPhone|iPad|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function instInApp(){return /FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\/|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent||'')}
+function instOwnSite(){return /github\.io$/.test(location.hostname)}
+function instSync(){const show=!instStandalone()&&(!!INST.ev||(instIOS()&&instOwnSite()));$$('.instbtn').forEach(b=>b.hidden=!show)}
+function instShow(){
+  if(INST.ev){const e=INST.ev;INST.ev=null;try{e.prompt();e.userChoice.finally(()=>instSync())}catch(_){}instSync();return}
+  let h;
+  if(instIOS()&&instInApp()&&!/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent))h='<ol><li>Toca <b>⋯</b> o <b>Compartir</b> y elige <b>Abrir en Safari</b>.</li><li>En Safari, toca <span class="ish"></span> <b>Compartir</b>.</li><li>Elige <b>Añadir a pantalla de inicio</b> y pulsa <b>Añadir</b>.</li></ol>';
+  else if(instIOS())h='<ol><li>Toca <span class="ish"></span> <b>Compartir</b> (abajo en Safari, arriba en Chrome).</li><li>Desliza y elige <b>Añadir a pantalla de inicio</b>.</li><li>Pulsa <b>Añadir</b>. ¡Ya tienes el icono de KickAss Games!</li></ol>';
+  else h='<ol><li>Abre el menú <b>⋮</b> del navegador.</li><li>Elige <b>Instalar aplicación</b> o <b>Añadir a pantalla de inicio</b>.</li><li>Confirma. ¡Ya tienes el icono de KickAss Games!</li></ol>';
+  $('#install .isteps').innerHTML=h;$('#install').hidden=false}
+(function(){
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST.ev=e;instSync()});
+  window.addEventListener('appinstalled',()=>{INST.ev=null;instSync()});
+  $$('.instbtn').forEach(b=>{b.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();instShow()});b.addEventListener('pointerdown',e=>e.stopPropagation())});
+  $('#install').addEventListener('click',e=>{e.stopPropagation();if(e.target.id==='install'||e.target.classList.contains('iok'))$('#install').hidden=true});
+  if(instOwnSite()&&'serviceWorker' in navigator)try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+  instSync();
+  if(/[?&]instalar\b/.test(location.search)&&!instStandalone())setTimeout(instShow,900);
+})();
 
 /* Enlace de inscripciones: pon aquí la URL cuando esté lista (vacío = botón oculto) */
 const INSCRIPCION_URL='';
