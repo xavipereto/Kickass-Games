@@ -238,8 +238,8 @@ kbd{display:inline-block;min-width:28px;text-align:center;background:var(--ink);
 .go.imgbtn:active img{transform:scale(.96)}
 img.wimg{display:block;height:46px;width:auto;max-width:100%;filter:drop-shadow(0 3px 0 #000);transition:transform .1s}
 img.wimg.big{height:64px}img.wimg.sm{height:38px}
-/* pausa: SEGUIR grande y el resto cada vez más pequeño */
-#pause #resume img.wimg{height:clamp(56px,11vh,80px)}#pause #quit img.wimg{height:clamp(42px,8vh,58px)}#pause #showCtrl img.wimg{height:clamp(36px,6.8vh,50px)}img.wimg.hd{height:28px}#pause h2 img.wimg.hd{height:44px}
+/* pausa: SEGUIR, MENÚ y CONTROLES del mismo tamaño */
+#pause #resume img.wimg,#pause #quit img.wimg,#pause #showCtrl img.wimg{height:clamp(44px,8vh,60px)}img.wimg.hd{height:28px}#pause h2 img.wimg.hd{height:44px}
 .res-head h1 img.wimg.big{height:clamp(46px,8vw,74px)}
 :fullscreen #app,:-webkit-full-screen #app{padding:0}
 html:fullscreen,html:fullscreen body{background:#000;width:100%;height:100%}
