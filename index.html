@@ -239,7 +239,7 @@ kbd{display:inline-block;min-width:28px;text-align:center;background:var(--ink);
 img.wimg{display:block;height:46px;width:auto;max-width:100%;filter:drop-shadow(0 3px 0 #000);transition:transform .1s}
 img.wimg.big{height:64px}img.wimg.sm{height:38px}
 /* pausa: SEGUIR grande y el resto cada vez más pequeño */
-#pause #resume img.wimg{height:clamp(56px,11vh,80px)}#pause #quit img.wimg{height:clamp(42px,8vh,58px)}#pause #showCtrl img.wimg{height:clamp(36px,6.8vh,50px)}#pause #exitGame img.wimg{height:clamp(32px,6vh,44px)}#pause #exitGame .gtxt{font-size:clamp(28px,5.4vh,40px)}img.wimg.hd{height:28px}#pause h2 img.wimg.hd{height:44px}
+#pause #resume img.wimg{height:clamp(56px,11vh,80px)}#pause #quit img.wimg{height:clamp(42px,8vh,58px)}#pause #showCtrl img.wimg{height:clamp(36px,6.8vh,50px)}img.wimg.hd{height:28px}#pause h2 img.wimg.hd{height:44px}
 .res-head h1 img.wimg.big{height:clamp(46px,8vw,74px)}
 :fullscreen #app,:-webkit-full-screen #app{padding:0}
 html:fullscreen,html:fullscreen body{background:#000;width:100%;height:100%}
@@ -562,7 +562,6 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
         <button id="resume" class="go" type="button">SEGUIR</button>
         <button id="quit" class="go alt" type="button">SALIR AL MENÚ</button>
         <button id="showCtrl" class="go alt" type="button">CONTROLES</button>
-        <button id="exitGame" class="go alt imgbtn" type="button" aria-label="Salir del juego"><span class="gtxt">SALIR</span></button>
         <div id="pauseCtrl" class="how" hidden>
           <div class="keys pctrl"></div>
         </div>
@@ -1757,7 +1756,7 @@ function applyUI(){
   r.setProperty('--i-cap','url("'+TXT_IMG.cap+'")');if(typeof DEFEAT_BG!=='undefined')r.setProperty('--i-defeat-bg','url("'+DEFEAT_BG+'")');r.setProperty('--i-defeat-title','url("'+TXT_IMG.b_sinaliento+'")');
   const W_=(k,alt,cls)=>'<img class="wimg '+(cls||'')+'" alt="'+alt+'" src="'+TXT_IMG[k]+'">';
   const setB=(sel,k,alt,cls)=>{const b=$(sel);if(!b)return;b.innerHTML=W_(k,alt,cls);b.classList.add('imgbtn');b.setAttribute('aria-label',alt)};
-  setB('#play','b_jugar','Jugar','big');{const h=$('#hubPlay');h.innerHTML=W_('b_jugar','Jugar');h.setAttribute('aria-label','Jugar');const r=$('#hubRank');r.innerHTML=W_('b_ranking','Ranking');r.setAttribute('aria-label','Ranking')}setB('#again','b_otravez','Otra vez');setB('#toMenu','b_menu','Menú','sm');setB('#resume','b_seguir','Seguir');setB('#quit','b_menu','Salir al menú','sm');setB('#showCtrl','g_ctrl','Controles','sm');if(TXT_IMG.g_salir)setB('#exitGame','g_salir','Salir del juego');
+  setB('#play','b_jugar','Jugar','big');{const h=$('#hubPlay');h.innerHTML=W_('b_jugar','Jugar');h.setAttribute('aria-label','Jugar');const r=$('#hubRank');r.innerHTML=W_('b_ranking','Ranking');r.setAttribute('aria-label','Ranking')}setB('#again','b_otravez','Otra vez');setB('#toMenu','b_menu','Menú','sm');setB('#resume','b_seguir','Seguir');setB('#quit','b_menu','Salir al menú','sm');setB('#showCtrl','g_ctrl','Controles','sm');
   const ph=$('#pause h2');if(ph)ph.innerHTML=W_('b_pausa','Pausa','hd');
   const rk0=$('#rkT');if(rk0)rk0.outerHTML=W_('b_ranking','Ranking','ttl');
   const rk=$('#rkT2');if(rk)rk.innerHTML=W_('b_ranking','Ranking','hd');
@@ -2202,8 +2201,6 @@ function sndUIInit(){const bind=(id,set,tog)=>{const r=$('#'+id);if(!r)return;r.
   bind('mxMu',v=>{MIX.mu=v;if(v>0)MIX.muOff=false},()=>{MIX.muOff=!MIX.muOff});
   bind('mxFx',v=>{MIX.fx=v;if(v>0)MIX.fxOff=false},()=>{MIX.fxOff=!MIX.fxOff});
   $$('#mxFx input,#mxM input').forEach(i=>i.addEventListener('change',()=>{audio();tone(520,.07,'square',.06)}))}
-/* SALIR: cierra la ventana si el navegador lo permite; si no, termina la partida, sale de pantalla completa y vuelve a la portada */
-function exitGame(){try{window.close()}catch(e){}setTimeout(()=>{try{if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document)}catch(e){}try{if(app.classList.contains('pseudofs'))pseudoFs(false)}catch(e){}showMenu();$('#menu').hidden=true;showTitle()},250)}
 function showMenu(){app.classList.remove('playing');mode='menu';G&&(G.over=true);app.classList.remove('wod');setActLabel('BARRA');$('#menu').hidden=false;$('#results').hidden=true;$('#pause').hidden=true;refreshRank();menuGo('hub')}
 function startGame(o){
   lastOpts=o;audio();SFX.click();musicStart();photoSndLoad();smpLoadAll();
@@ -2230,7 +2227,6 @@ function initUI(){
   $('#resume').addEventListener('click',()=>setPause(false));
   $('#showCtrl').addEventListener('click',()=>showPauseCtrl());
   $('#quit').addEventListener('click',showMenu);
-  $('#exitGame').addEventListener('click',exitGame);
   $('#again').addEventListener('click',()=>{if(lastOpts)startGame(lastOpts)});
   $('#toMenu').addEventListener('click',showMenu);
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play')setPause(true)});
