@@ -1250,8 +1250,8 @@ function shout(e){if(JT[e.type]&&JT[e.type].mute)return;musicDuck(.45,900);e.sho
 function killE(e,dir){e.st='dying';e.t=0;e.vx=dir*240;e.flash=.15;G.kills++;const v=e.val+G.combo*5;G.score+=v;ftext(e.x,e.y-70,'+'+v,'#ffd23f',12);photoCharge(10);burst(e.x,e.y-30,12,'#ffd23f',170);SFX.hit();
   const r=Math.random();if(e.type!=='base'||r<.28){G.pick.push({kind:'pick',type:r<.5?'shake':'wb',x:e.x,y:clamp(e.y,FY0+6,FY1),t:0})}}
 function hurtE(e,dmg,dir,kd,kb){
-  if(G.power>0){dmg=Math.max(dmg,e.hp+1);burst(e.x,e.y-40,10,'#ff2bd6',200)}
-  e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-34,6,'#fff6c0',130);
+  if(G.power>0){dmg=e.type==='chief'?dmg*2:Math.max(dmg,e.hp+1);burst(e.x,e.y-40,10,'#ff2bd6',200)}
+  dmg=bossCap(e,dmg);e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-34,6,'#fff6c0',130);
   if(e.hp<=0){killE(e,dir);return}
   if(kd&&e.type==='chief'&&e.st!=='tired')kd=false; // el jefe solo cae agotado (o con la patada)
   if(kd){e.st='down';e.t=0;e.vx=dir*(kb||210);e.vy=0}
@@ -1313,7 +1313,7 @@ function updGrab(a,inp,dt){const e=a.tgt;if(!e||e.st!=='grabbed'){a.st='idle';re
   if(a.t>=1.6){e.st='hurt';e.t=0;e.vx=a.face*120;a.st='idle';a.tgt=null}}
 function updKick(a,dt){const e=a.tgt;
   if(!a.hit&&a.t>=.08&&e){a.hit=true;smpPlay('kick_'+((a.pal&&a.pal.spr)||''),1);
-    const dmg=G.power>0?999:45;e.hp-=dmg;e.flash=.15;G.combo++;G.comboT=2.2;G.score+=150;photoCharge(8);
+    const dmg=bossCap(e,G.power>0?(e.type==='chief'?90:999):45);e.hp-=dmg;e.flash=.15;G.combo++;G.comboT=2.2;G.score+=150;photoCharge(8);
     if(e.hp<=0){killE(e,a.face);e.kill=true}
     e.st='kicked';e.t=0;e.vx=a.face*320;e.vz=270;e.z=0;e.hitSet=[];e.grabber=null;
     ftext(e.x,e.y-90,'¡KICK ASS!','#ff2bd6',16);burst(e.x-a.face*10,e.y-38,18,'#ffd23f',240);ring(e.x,e.y-36,60);G.shake=.42;G.hitstop=.09;SFX.boom()}
@@ -1453,7 +1453,9 @@ function updProj(dt){
 }
 function spawnWave(w){
   const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):'base');
-  list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;G.en.push(mkJudge(t,x,rr(FY0+8,FY1-6),G.cat))});
+  list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
+    if(t==='chief'){e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
+    G.en.push(e)});
   G.lockX=G.cam;G.cleared=false;bigMsg(boss?'¡SPEAKER ENTRA EN PISTA!':'¡NO REP A LA VISTA!',1.6);
 }
 function enterBox(){
@@ -1505,7 +1507,7 @@ const POLA_T=5.1;
 function startPhoto(){photoSndLoad();G.mode2='photo';const v=smpPlay('foto_voz',1);if(v)musicDuck(.4,2400);G.ph={t:0,fired:false,c:v?[1.01,1.39,1.77]:[.8,1.1,1.4],ft:v?2.22:1.7};G.ath.forEach(a=>{a.st='pose';a.t=0});G.photog.st='idle';SFX.beep()}
 function photoFlash(){
   const lead=G.ath[0];G.flash=1;G.shake=.5;G.photo=0;G.photoFull=false;if(!G.ph||!G.ph.sample)SFX.flash();musicDuck(.25,900);G.polaroid=POLA_T;{const n=(POLA[G.o.pair]||POLA.X).length;let i=Math.floor(Math.random()*n);if(n>1&&i===G.polaI)i=(i+1)%n;G.polaI=i}
-  for(const e of G.en){if(e.st==='dying')continue;if(Math.abs(e.x-lead.x)<320){const dir=e.x>=lead.x?1:-1;e.hp-=45;if(e.hp<=0)killE(e,dir);else{e.st='stun';e.t=0;e.stunDur=3;e.vx=dir*360;e.vy=0;e.flash=.3;G.score+=150;ftext(e.x,e.y-70,'+150','#ffd23f',11)}}}
+  for(const e of G.en){if(e.st==='dying')continue;if(Math.abs(e.x-lead.x)<320){const dir=e.x>=lead.x?1:-1;if(e.type==='chief'){e.hp-=bossCap(e,20);e.flash=.3;ftext(e.x,e.y-110,'-20','#ffd23f',11);continue}e.hp-=45;if(e.hp<=0)killE(e,dir);else{e.st='stun';e.t=0;e.stunDur=3;e.vx=dir*360;e.vy=0;e.flash=.3;G.score+=150;ftext(e.x,e.y-70,'+150','#ffd23f',11)}}}
   const pg=G.photog;ring(pg.x,pg.y-36,260);burst(pg.x,pg.y-36,26,'#ffffff',320);
 }
 function updPhoto(dt){
@@ -1538,6 +1540,8 @@ const BSND={
   sizzle:()=>noise(.4,.05),
   spray:()=>noise(.6,.035)
 };
+/* el jefe no puede caer antes de su número final: la vida se queda en el 29 % hasta que pasen los últimos diez segundos */
+function bossCap(e,dmg){if(e.type!=='chief'||e.did10&&e.st!=='table10')return dmg;if(e.st==='table10')return 0;const floor=e.maxHp*.29;if(e.hp-dmg<=floor)e.cd=0;return Math.max(0,Math.min(dmg,e.hp-floor))}
 function bossPhase(e){const r=e.hp/e.maxHp;return r>.6?1:r>.3?2:3}
 function bossArena(){const L=G.lockX!=null?G.lockX:G.cam;return{x0:L+30,x1:L+W-30}}
 /* elegir ataque (se llama desde el estado 'walk' cuando no está en recarga) */
