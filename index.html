@@ -1298,8 +1298,7 @@ function updRescue(dt){
   for(const a of G.ath){
     if(a.st==='downed'){a.rescueT-=dt;if(a!==lead)a.face=lead.x>a.x?1:-1;a.vx*=Math.pow(.02,dt);a.x+=a.vx*dt;
       if(a.rescueT<=0){a.st='out';a.t=0;bigMsg('K.O.',1.6);G.koT=1.6;G.lostWhy=isFemAth(a)?'No llegasteis a tiempo de rescatar a vuestra compañera.':'No llegasteis a tiempo de rescatar a vuestro compañero.';SFX.lose&&SFX.lose()}
-      else if(a!==lead&&athUp(lead)&&(lead.st==='idle'||lead.st==='walk')&&Math.abs(lead.x-a.x)<38&&Math.abs(lead.y-a.y)<16){
-        lead.st='help';lead.t=0;lead.face=a.x>lead.x?1:-1;lead.helpT=a;a.st='rescued';a.t=0;a.face=-lead.face;lead.x=a.x-lead.face*44;lead.y=a.y+1;SFX.pick()}}
+}
     else if(a.st==='rescued'&&a.t>=1.1){a.st='idle';a.t=0;a.hp=50;a.inv=1.6;bigMsg('¡RESCATE!',1.2);G.arribaT=1.2;G.arribaX=a.x;G.arribaY=a.y;ring(a.x,a.y-30,70)}
   }
   if(lead.st==='help'&&lead.t>=1.15){lead.st='idle';lead.helpT=null}
@@ -1323,6 +1322,9 @@ function doMelee(a){
 }
 /* ===== stand de camisetas KickAss Games (a mitad de camino) ===== */
 const STAND_X=2450,STAND_Y=203;
+/* rescate: acercarse al compañero en el suelo y pulsar X (Z en teclado) */
+function nearDowned(a){if(!a.lead)return null;const p=G.ath.find(o=>o!==a&&o.st==='downed');return p&&Math.abs(a.x-p.x)<46&&Math.abs(a.y-p.y)<20?p:null}
+function startRescue(lead,a){lead.st='help';lead.t=0;lead.face=a.x>lead.x?1:-1;lead.helpT=a;a.st='rescued';a.t=0;a.face=-lead.face;lead.x=a.x-lead.face*44;lead.y=a.y+1;SFX.pick()}
 function nearStand(a){return a.lead&&!G.bought&&Math.abs(a.x-STAND_X)<75&&a.y<246}
 function startBuy(a){a.st='buy';a.t=0;a.face=a.x<STAND_X?1:-1;a.done=false;G.vendor.st='give';G.vendor.t=0;G.vendor.face=a.x<STAND_X?-1:1;SFX.pick()}
 function updBuy(a,dt){
@@ -1394,7 +1396,7 @@ function updAth(a,inp,dt){
       vx=inp.ax*(a.run?150:102);vy=inp.ay*66;if(inp.ax)a.face=inp.ax>0?1:-1;
       a.st=(inp.ax||inp.ay)?'walk':'idle';if(a.st==='walk')a.ph+=dt*10;
       if(a.lead&&inp.ax&&!(inp.z||inp.k||inp.j)){const g=G.en.find(e=>canHit(e)&&e.st!=='getup'&&!(JT[e.type]&&JT[e.type].nograb)&&!(e.type==='chief'&&e.st!=='walk'&&e.st!=='tired')&&Math.abs(e.y-a.y)<10&&(e.x-a.x)*inp.ax>0&&Math.abs(e.x-a.x)<34);if(g){startGrab(a,g);break}}
-      if(inp.z&&nearStand(a))startBuy(a);else if(inp.z&&a.carry==='db')startThrow(a);else if(inp.z&&a.carry==='wb')startSlam(a);else if(inp.z)startAtk(a);else if(inp.k)startKick(a);else if(inp.j)startHop(a);else if(inp.dodge&&a.rollCd<=0)startRoll(a,inp);
+      if(inp.z&&nearDowned(a))startRescue(a,nearDowned(a));else if(inp.z&&nearStand(a))startBuy(a);else if(inp.z&&a.carry==='db')startThrow(a);else if(inp.z&&a.carry==='wb')startSlam(a);else if(inp.z)startAtk(a);else if(inp.k)startKick(a);else if(inp.j)startHop(a);else if(inp.dodge&&a.rollCd<=0)startRoll(a,inp);
       break;
     case 'buy':updBuy(a,dt);break;
     case 'downed':case 'rescued':case 'out':case 'help':vx=0;vy=0;break;
@@ -1790,7 +1792,8 @@ function drawEntity(g,e){
   if(e.kind==='ath'&&e.st==='downed'){const n=Math.ceil(e.rescueT),x=Math.round(e.x),y=Math.round(e.y-46),pulse=1+.15*Math.max(0,(e.rescueT%1)-.7)/.3;
     const nk=n>=4?'n_'+n:'t_'+n;if(!drawTxt(g,nk,x,y-8,30,1,pulse)){g.save();g.translate(x,y);g.scale(pulse,pulse);T(g,String(n),0,0,F_D(26),n<=3?'#ff5555':'#ffd23f','center','#04101a');g.restore()}
     const bl=.75+.25*Math.sin(G.run*8);drawTxt(g,isFemAth(e)?'r_rescala':'r_rescalo',x,y-40,17,bl)||T(g,isFemAth(e)?'¡RESCÁTALA!':'¡RESCÁTALO!',x,y-26,F_D(10),'#ff5aa8','center','#04101a');
-    g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=3;g.beginPath();g.arc(x,y-8,20,-1.57,-1.57+6.283*e.rescueT/RESCUE_T);g.stroke()}
+    g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=3;g.beginPath();g.arc(x,y-8,20,-1.57,-1.57+6.283*e.rescueT/RESCUE_T);g.stroke()
+    {const L=G.ath[0];if(L!==e){const near=Math.abs(L.x-e.x)<46&&Math.abs(L.y-e.y)<20;drawBtnPrompt(g,x,y-62,near?'¡LEVÁNTALO!'.replace('LO!',isFemAth(e)?'LA!':'LO!'):'ACÉRCATE Y PULSA')}}}
   if(e.kind==='ath'&&e===G.swapA&&e.st==='hifive'&&e.t>.38){const a=clamp((.95-e.t)*5,0,1),pop=1+Math.max(0,.5-e.t)*2.5,mx=Math.round((e.x+G.swapB.x)/2);if(!drawTxt(g,'t_igo',mx,Math.round(e.y-118),30,a,pop))drawBubble(g,'¡I GO, YOU GO!',mx,Math.round(e.y-100-e.z),e.face,1.25-(e.t-.3))}
   if(e.kind==='ath'&&e===G.tocaE&&G.tocaT>0){G.tocaT-=1/60;drawTxt(g,'t_tetoca',Math.round(e.x),Math.round(e.y-(e._top!=null?e.y-e._top:80)-30-(1.1-G.tocaT)*14),18,clamp(G.tocaT*2.5,0,1))}
   if(e.kind==='ath'&&e.lead&&e.st==='grab'){const a=.6+.4*Math.sin(G.run*10);g.globalAlpha=a;T(g,app.classList.contains('touch')?'BARRA = ¡KICK ASS!':'Z = ¡KICK ASS!',Math.round(e.x+e.face*20),Math.round(e.y-104),F_D(11),'#ff2bd6','center','#14060f');g.globalAlpha=1}
@@ -1836,7 +1839,7 @@ function drawStand(g,st){
   // mesa por delante
   const F=STI.standF,ty=STAND_M.standF[0];g.drawImage(F,x0,y0+ty*s,W0,(sh-ty)*s);
   if(G.bought)T(g,'¡AGOTADO!',STAND_X,y0+H0*.83,F_D(12),'#ff5aa8','center','#14060f');
-  if(!G.bought&&Math.abs(L.x-STAND_X)<75&&L.y<246){const a=.6+.4*Math.sin(t*6);g.globalAlpha=a;T(g,'¡GOLPE = COMPRAR!',STAND_X,y0-6,F_D(12),'#ff5aa8','center','#14060f');g.globalAlpha=1}
+  if(!G.bought&&Math.abs(L.x-STAND_X)<75&&L.y<246){const a=.6+.4*Math.sin(t*6);g.globalAlpha=a;drawBtnPrompt(g,STAND_X,y0-8,'COMPRAR');g.globalAlpha=1}
 }
 function drawStandOld(g,st){
   const x=Math.round(STAND_X),y=STAND_Y,V=G.vendor,t=G.run,L=G.ath[0];
@@ -1854,8 +1857,15 @@ function drawStandOld(g,st){
   g.fillStyle='#0b3b5c';g.fillRect(x-74,y-30,148,30);g.fillStyle='#08C5C1';g.fillRect(x-74,y-32,148,4);
   for(let i=0;i<5;i++){g.fillStyle=i%2?'#e0168a':'#ff1f9d';g.fillRect(x-66+i*27,y-39,20,7);g.fillStyle='#14060f';g.fillRect(x-66+i*27,y-39,20,1)}
   if(G.bought)T(g,'¡AGOTADO!',x,y-10,F_D(13),'#ff5aa8','center','#14060f');else{T(g,'CAMISETA KICKASS',x,y-17,F_D(9),'#fff','center');T(g,'-25% VIDA · 20 s DE GOLPE MORTAL',x,y-5,F_U(10),'#ffd23f','center')}
-  if(!G.bought&&Math.abs(L.x-STAND_X)<75&&L.y<246){const a=.6+.4*Math.sin(t*6);g.globalAlpha=a;T(g,'¡GOLPE = COMPRAR!',x,y-148,F_D(12),'#ff5aa8','center','#14060f');g.globalAlpha=1}
+  if(!G.bought&&Math.abs(L.x-STAND_X)<75&&L.y<246){const a=.6+.4*Math.sin(t*6);g.globalAlpha=a;drawBtnPrompt(g,x,y-150,'COMPRAR');g.globalAlpha=1}
 }
+/* aviso de botón: círculo con la letra (X en móvil, Z en teclado) + acción */
+function actKey(){return app.classList.contains('touch')?'X':'Z'}
+function drawBtnPrompt(g,x,y,txt){const k=actKey(),pulse=1+.08*Math.sin((G.run||0)*8);g.save();g.translate(Math.round(x),Math.round(y));g.scale(pulse,pulse);
+  g.font=F_D(12);const tw=g.measureText(txt).width,w=tw+34,l=-w/2;
+  g.fillStyle='rgba(4,14,26,.82)';g.beginPath();g.roundRect?g.roundRect(l,-11,w,22,11):g.rect(l,-11,w,22);g.fill();g.strokeStyle='#ffd23f';g.lineWidth=1.5;g.stroke();
+  g.fillStyle='#20222b';g.beginPath();g.arc(l+11,0,8.5,0,7);g.fill();g.strokeStyle=k==='X'?'#5aa0ff':'#c9ccd6';g.lineWidth=2;g.stroke();
+  T(g,k,l+11,4,F_D(11),k==='X'?'#5aa0ff':'#fff','center');T(g,txt,l+24,4,F_D(12),'#ffd23f','left','#04101a');g.restore()}
 function drawPick(g,p){
   const b=Math.sin(p.t*5)*2-(p.pz||0),x=Math.round(p.x),y=Math.round(p.y);
   g.fillStyle='rgba(255,255,255,'+(.15+.1*Math.sin(p.t*6))+')';g.beginPath();g.ellipse(x,y,13,4,0,0,7);g.fill();
@@ -2097,8 +2107,8 @@ function menuGo(p){mPage=p;if(p==='ctrl')fillCtrlPage();const m=$('#menu');m.dat
 function fillCtrlPage(){const T=app.classList.contains('touch'),cards=$$('#menu .ctrlgrid .card');if(cards.length<2)return;
   const k=a=>a.map(x=>'<span>'+x[0].split(' ').map(y=>y==='+'?' + ':'<kbd>'+y+'</kbd>').join('')+'</span><span>'+x[1]+'</span>').join('');
   const H3=(key,alt)=>'<h3><img class="wimg h3i" alt="'+alt+'" src="'+TXT_IMG[key]+'"></h3>';
-  const street=T?[['Joystick','Moverse (más inclinado = correr)'],['X','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['Y','Patada'],['A','Salto (en el aire, Y = patada voladora)'],['B','Esquiva (voltereta)'],['L1','Foto de equipo'],['R1','Cambiar de atleta'],['X / Y','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + X','¡Kick ass! Camina contra un juez para agarrarlo y pulsa X'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls']]
-    :[['WASD ←↑↓→','Moverse'],['Z','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['X','Patada'],['C','Salto (en el aire, X = patada voladora)'],['Espacio','Esquiva (voltereta)'],['V','Foto de equipo'],['Q','Cambiar de atleta'],['Z / X','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + Z','¡Kick ass! Camina contra un juez para agarrarlo y pulsa Z'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls']];
+  const street=T?[['Joystick','Moverse (más inclinado = correr)'],['X','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['Y','Patada'],['A','Salto (en el aire, Y = patada voladora)'],['B','Esquiva (voltereta)'],['L1','Foto de equipo'],['R1','Cambiar de atleta'],['X / Y','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + X','¡Kick ass! Camina contra un juez para agarrarlo y pulsa X'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls'],['X','Junto a tu pareja en el suelo: levantarla · en la tienda: comprar']]
+    :[['WASD ←↑↓→','Moverse'],['Z','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['X','Patada'],['C','Salto (en el aire, X = patada voladora)'],['Espacio','Esquiva (voltereta)'],['V','Foto de equipo'],['Q','Cambiar de atleta'],['Z / X','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + Z','¡Kick ass! Camina contra un juez para agarrarlo y pulsa Z'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls'],['Z','Junto a tu pareja en el suelo: levantarla · en la tienda: comprar']];
   const wod=T?[['X / A','Snatch y muscle-up'],['◀ ▶','Handstand walk (joystick, alternando)']]:[['Z Espacio','Snatch y muscle-up'],['← →','Handstand walk (alternos)']];
   const gen=T?[['START','Pausa'],['SELECT','Ver controles']]:[['P','Pausa'],['H','Ver controles'],['M','Sonido'],['F','Pantalla completa']];
   cards[0].innerHTML=H3('m_calle','Calle')+'<div class="keys">'+k(street)+'</div>';
@@ -2499,8 +2509,8 @@ function frame(ts){
 /* ===== MENÚ ===== */
 function setPause(b){if(mode!=='play'&&mode!=='pause')return;if(!b)showPauseCtrl(false);mode=b?'pause':'play';app.classList.toggle('playing',!b);$('#pause').hidden=!b;clearKeys()}
 function showPauseCtrl(on){const p=$('#pauseCtrl');if(!p)return;if(on===undefined)on=p.hidden;p.hidden=!on;
-  if(on){const T=app.classList.contains('touch');const R=T?[['X','Barra (combo de 3) · lanzar lo que llevas · devolver wall ball · comprar'],['Y','Patada · también devuelve la wall ball'],['A','Salto (en el aire, Y = patada voladora)'],['B','Esquiva (voltereta)'],['L1','Foto de equipo'],['R1','Cambiar de atleta'],['Joystick','Moverse (más inclinado = correr)'],['→ + X','Agarrar a un juez y ¡Kick ass!'],['START','Pausa'],['SELECT','Ver controles']]
-    :[['Z','Barra (combo de 3) · lanzar lo que llevas · devolver wall ball · comprar'],['X','Patada · también devuelve la wall ball'],['C','Salto (en el aire, X = patada voladora)'],['ESPACIO','Esquiva (voltereta)'],['V','Foto de equipo'],['Q','Cambiar de atleta'],['WASD / ← ↑ ↓ →','Moverse'],['→ + Z','Agarrar a un juez y ¡Kick ass!'],['P / ESC','Pausa'],['H','Ver controles'],['M · F','Sonido · pantalla completa']];
+  if(on){const T=app.classList.contains('touch');const R=T?[['X','Barra (combo de 3) · lanzar lo que llevas · devolver wall ball · comprar · levantar a tu pareja'],['Y','Patada · también devuelve la wall ball'],['A','Salto (en el aire, Y = patada voladora)'],['B','Esquiva (voltereta)'],['L1','Foto de equipo'],['R1','Cambiar de atleta'],['Joystick','Moverse (más inclinado = correr)'],['→ + X','Agarrar a un juez y ¡Kick ass!'],['START','Pausa'],['SELECT','Ver controles']]
+    :[['Z','Barra (combo de 3) · lanzar lo que llevas · devolver wall ball · comprar · levantar a tu pareja'],['X','Patada · también devuelve la wall ball'],['C','Salto (en el aire, X = patada voladora)'],['ESPACIO','Esquiva (voltereta)'],['V','Foto de equipo'],['Q','Cambiar de atleta'],['WASD / ← ↑ ↓ →','Moverse'],['→ + Z','Agarrar a un juez y ¡Kick ass!'],['P / ESC','Pausa'],['H','Ver controles'],['M · F','Sonido · pantalla completa']];
     setTimeout(()=>{try{p.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}},30);p.querySelector('.pctrl').innerHTML=R.map(r=>'<span>'+r[0].split(' · ').map(x=>x.split(' / ').map(y=>'<kbd>'+y+'</kbd>').join(' ')).join(' ')+'</span><span>'+r[1]+'</span>').join('')}}
 function togglePause(){setPause(mode==='play')}
 function toggleMute(){muted=!muted;mixApply();syncSnd()}
