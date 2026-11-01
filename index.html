@@ -25,7 +25,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ui);font-si
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 
-#app{position:relative;height:100%;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:env(safe-area-inset-top,0px);padding-bottom:0}
+#app{position:fixed;inset:0;height:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:env(safe-area-inset-top,0px);padding-bottom:0}
 
 /* ---------- escenario ---------- */
 #stage{height:100%;display:grid;grid-template-columns:1fr;grid-template-rows:1fr;grid-template-areas:"screen"}
