@@ -1484,6 +1484,7 @@ function updStreet(dt){
   for(const a of G.ath){a.x=clamp(a.x,Math.max(14,G.cam+16),Math.min(LEVEL_W-16,G.cam+W-16))}
   for(const e of G.en)updJudge(e,dt);
   updBossFx(dt);
+  if(G.polaroid>0)G.polaroid=Math.max(0,G.polaroid-dt); // la foto también se va cuando ya se juega
   G.en=G.en.filter(e=>!e.dead);
   updProj(dt);
   G.pick=G.pick.filter(p=>{p.t+=dt;if(Math.abs(p.x-lead.x)<16&&Math.abs(p.y-lead.y)<14){if(p.type==='shake'){G.hp=Math.min(100,G.hp+28);ftext(lead.x,lead.y-70,'+28 SALUD','#3ddc84',11)}else{G.wb=Math.min(3,G.wb+1);ftext(lead.x,lead.y-70,'+1 WALL BALL','#ffd23f',11)}SFX.pick();return false}return true});
