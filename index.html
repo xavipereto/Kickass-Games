@@ -2540,11 +2540,16 @@ function initUI(){
   $('#quit').addEventListener('click',showMenu);
   $('#again').addEventListener('click',()=>{if(lastOpts)startGame(lastOpts)});
   $('#toMenu').addEventListener('click',showMenu);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play')setPause(true)});
+  /* al salir de la app (otra app, bloquear el móvil, cambiar de pestaña) se pausa y se calla todo; al volver, vuelve el sonido */
+  const sleep=()=>{if(mode==='play')setPause(true);try{if(AC&&AC.state==='running')AC.suspend()}catch(e){}};
+  const wake=()=>{if(document.hidden)return;try{if(AC&&AC.state==='suspended')AC.resume()}catch(e){}};
+  document.addEventListener('visibilitychange',()=>{document.hidden?sleep():wake()});
+  window.addEventListener('pagehide',sleep);window.addEventListener('blur',()=>{if(document.hidden)sleep()});
+  window.addEventListener('pageshow',wake);window.addEventListener('focus',wake);
 }
 function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
-  window.__nrb={mkJudge,get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
+  window.__nrb={mkJudge,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1800))]).then(init);
