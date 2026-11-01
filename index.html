@@ -1862,10 +1862,12 @@ function drawStandOld(g,st){
 /* aviso de botón: círculo con la letra (X en móvil, Z en teclado) + acción */
 function actKey(){return app.classList.contains('touch')?'X':'Z'}
 function drawBtnPrompt(g,x,y,txt){const k=actKey(),pulse=1+.08*Math.sin((G.run||0)*8);g.save();g.translate(Math.round(x),Math.round(y));g.scale(pulse,pulse);
-  g.font=F_D(12);const tw=g.measureText(txt).width,w=tw+34,l=-w/2;
-  g.fillStyle='rgba(4,14,26,.82)';g.beginPath();g.roundRect?g.roundRect(l,-11,w,22,11):g.rect(l,-11,w,22);g.fill();g.strokeStyle='#ffd23f';g.lineWidth=1.5;g.stroke();
-  g.fillStyle='#20222b';g.beginPath();g.arc(l+11,0,8.5,0,7);g.fill();g.strokeStyle=k==='X'?'#5aa0ff':'#c9ccd6';g.lineWidth=2;g.stroke();
-  T(g,k,l+11,4,F_D(11),k==='X'?'#5aa0ff':'#fff','center');T(g,txt,l+24,4,F_D(12),'#ffd23f','left','#04101a');g.restore()}
+  // letras de cómic como el resto del juego: amarillo con contorno negro grueso y sombra
+  g.font="19px 'Bangers','Bungee',Impact,sans-serif";g.textBaseline='middle';const tw=g.measureText(txt).width,w=tw+26,l=-w/2;
+  g.fillStyle='#20222b';g.beginPath();g.arc(l+9,0,9,0,7);g.fill();g.strokeStyle='#000';g.lineWidth=4;g.stroke();g.strokeStyle=k==='X'?'#5aa0ff':'#c9ccd6';g.lineWidth=2;g.stroke();
+  g.textAlign='center';g.lineJoin='round';g.lineWidth=3;g.strokeStyle='#000';g.strokeText(k,l+9,1);g.fillStyle=k==='X'?'#5aa0ff':'#fff';g.fillText(k,l+9,1);
+  g.textAlign='left';const tx=l+24;g.fillStyle='#000';g.fillText(txt,tx+1.5,2.5);g.lineWidth=4;g.strokeText(txt,tx,0);g.fillStyle='#ffd23f';g.fillText(txt,tx,0);
+  g.restore()}
 function drawPick(g,p){
   const b=Math.sin(p.t*5)*2-(p.pz||0),x=Math.round(p.x),y=Math.round(p.y);
   g.fillStyle='rgba(255,255,255,'+(.15+.1*Math.sin(p.t*6))+')';g.beginPath();g.ellipse(x,y,13,4,0,0,7);g.fill();
