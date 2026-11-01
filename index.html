@@ -1061,7 +1061,7 @@ function animSeq(o,A){ // controlador de estados → {seq,i}
   const dx=o.x-an.lx,dy=o.y-an.ly;an.lx=o.x;an.ly=o.y;
   if(o.kind==='photog'&&F.shoot&&G.mode2==='photo'&&G.ph){const t=G.ph.t; // levantar cámara → apuntar (agachado) → FLASH → bajar
     const ft=G.ph.ft||1.7;if(t<.5)return{seq:'shoot',i:0};if(t<ft)return F.shoot2?{seq:'shoot2',i:t<ft-.6?0:1}:{seq:'shoot',i:1};if(t<ft+.3)return{seq:'shoot',i:2};return{seq:'shoot',i:3}}
-  if(st==='walk'&&o.run&&F.run){const n=F.run.length,cy=A.runCycle;an.dist+=Math.min(cy/n*.4,Math.hypot(dx,dy*1.2));return{seq:'run',i:Math.floor(an.dist/(cy/n))%n}}
+  if(st==='walk'&&o.run&&F.run&&!(o.kind==='ath'&&o.carry)){const n=F.run.length,cy=A.runCycle;an.dist+=Math.min(cy/n*.4,Math.hypot(dx,dy*1.2));return{seq:'run',i:Math.floor(an.dist/(cy/n))%n}}
   if(o.kind==='ath'){
     const L16=q=>F[q]&&F[q].length>=16;
     if(o.carry==='wb'||st==='slam'){ // wall ball (Ludo)
