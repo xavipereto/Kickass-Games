@@ -3,6 +3,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="KickAss Games">
 <meta name="theme-color" content="#000000"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2"><link rel="manifest" href="manifest.json">
+<script data-goatcounter="https://thekickassgames.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <title>KickAss Games</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2219,6 +2220,7 @@ function instInApp(){return /FBAN|FBAV|Instagram|WhatsApp|Line\/|GSA\/|CriOS|Fxi
 function instOwnSite(){return /github\.io$/.test(location.hostname)}
 function instSync(){const show=!instStandalone()&&(!!INST.ev||(instIOS()&&instOwnSite()));$$('.instbtn').forEach(b=>b.hidden=!show)}
 function instShow(){
+  gcEv('boton-instalar','Botón INSTALAR');
   if(INST.ev){const e=INST.ev;INST.ev=null;try{e.prompt();e.userChoice.finally(()=>instSync())}catch(_){}instSync();return}
   let h;
   if(instIOS()&&instInApp()&&!/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent))h='<ol><li>Toca <b>⋯</b> o <b>Compartir</b> y elige <b>Abrir en Safari</b>.</li><li>En Safari, toca <span class="ish"></span> <b>Compartir</b>.</li><li>Elige <b>Añadir a pantalla de inicio</b> y pulsa <b>Añadir</b>.</li></ol>';
@@ -2228,7 +2230,8 @@ function instShow(){
   $('#install .isteps').innerHTML=h;$('#install').hidden=false}
 (function(){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST.ev=e;instSync()});
-  window.addEventListener('appinstalled',()=>{INST.ev=null;instSync()});
+  setTimeout(()=>{if(instStandalone())gcEv('abierta-desde-app','Abierta desde la app instalada')},5000);
+  window.addEventListener('appinstalled',()=>{gcEv('app-instalada','App instalada');INST.ev=null;instSync()});
   $$('.instbtn').forEach(b=>{b.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();instShow()});b.addEventListener('pointerdown',e=>e.stopPropagation())});
   $('#install').addEventListener('click',e=>{e.stopPropagation();if(e.target.id==='install'||e.target.classList.contains('iok'))$('#install').hidden=true});
   if(instOwnSite()&&'serviceWorker' in navigator)try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
@@ -2498,10 +2501,13 @@ function uiHSW(g,w){
   T(g,touchy()?'Joystick ◀ ▶':'A / D  ·  ← / →',x,336,F_U(13),'#8fb6c4');
 }
 
+/* ===== ESTADÍSTICAS (GoatCounter, solo en la web de GitHub) ===== */
+function gcEv(path,title){try{if(window.goatcounter&&goatcounter.count)goatcounter.count({path:path,title:title||path,event:true})}catch(e){}}
 /* ===== FIN DE PARTIDA Y RESULTADOS ===== */
 function finishRun(kind){
   if(G.over)return;G.over=true;G.endKind=kind;G.phase='over';
   const w=G.wod,c=G.cat,done=kind==='done';
+  gcEv(done?'partida-terminada':'partida-perdida','Partida '+(done?'terminada':'perdida')+' · '+c.name);gcEv('fin-'+(done?'ok':'ko')+'-'+c.name.normalize('NFD').toLowerCase().replace(/[^a-z]/g,''));
   let base=G.score+(w?w.pts:0);
   if(done)base+=1500+Math.round(Math.max(0,c.cap-w.t)*20);
   const score=Math.max(0,Math.round(base*c.mult)-G.noRep*50);
@@ -2569,6 +2575,7 @@ function sndUIInit(){const bind=(id,set,tog)=>{const r=$('#'+id);if(!r)return;r.
   $$('#mxFx input,#mxM input').forEach(i=>i.addEventListener('change',()=>{audio();tone(520,.07,'square',.06)}))}
 function showMenu(){app.classList.remove('playing');mode='menu';G&&(G.over=true);app.classList.remove('wod');setActLabel('BARRA');$('#menu').hidden=false;$('#results').hidden=true;$('#pause').hidden=true;refreshRank();menuGo('hub')}
 function startGame(o){
+  gcEv('partida-empezada','Partida empezada');gcEv('categoria-'+String(o.cat).normalize('NFD').toLowerCase().replace(/[^a-z0-9]/g,''),'Categoría '+o.cat);gcEv('pareja-'+o.pair,'Pareja '+o.pair);
   lastOpts=o;audio();SFX.click();musicStart();photoSndLoad();smpLoadAll();
   try{localStorage.setItem('nrb_team',o.team)}catch(e){}
   newGame(o);G.rkKey=null;
