@@ -48,11 +48,12 @@ button,input{font:inherit;color:inherit}
 .pb.on{background:#4a4e5c;transform:scale(.93);color:#fff}
 .pb.f{width:var(--fb);height:var(--fb);border-radius:50%;font-size:calc(var(--fb)*.56);position:absolute}
 .abxy{--fb:62px;position:relative;width:calc(var(--fb)*2.9);height:calc(var(--fb)*2.9)}
-.fx{left:50%;top:0;transform:translateX(-50%)}.fx.on{transform:translateX(-50%) scale(.93)}
-.fb{left:50%;bottom:0;transform:translateX(-50%)}.fb.on{transform:translateX(-50%) scale(.93)}
-.fy{left:0;top:50%;transform:translateY(-50%)}.fy.on{transform:translateY(-50%) scale(.93)}
-.fa{right:0;top:50%;transform:translateY(-50%)}.fa.on{transform:translateY(-50%) scale(.93)}
-.fa{color:#ff6b6b;border-color:#c04a4a}.fb{color:#ffd23f;border-color:#b8962a}.fx{color:#5aa0ff;border-color:#3b6fb8}.fy{color:#3ddc84;border-color:#2a9a5c}
+.fy{left:50%;top:0;transform:translateX(-50%)}.fy.on{transform:translateX(-50%) scale(.93)}
+.fa{left:50%;bottom:0;transform:translateX(-50%)}.fa.on{transform:translateX(-50%) scale(.93)}
+.fx{left:0;top:50%;transform:translateY(-50%)}.fx.on{transform:translateY(-50%) scale(.93)}
+.fb{right:0;top:50%;transform:translateY(-50%)}.fb.on{transform:translateY(-50%) scale(.93)}
+/* colores y posiciones como un mando de Xbox: Y arriba (amarillo), X izquierda (azul), A abajo (verde), B derecha (rojo) */
+.fa{color:#3ddc84;border-color:#2a9a5c}.fb{color:#ff6b6b;border-color:#c04a4a}.fx{color:#5aa0ff;border-color:#3b6fb8}.fy{color:#ffd23f;border-color:#b8962a}
 .pb.sh{width:78px;height:46px;border-radius:8px;font-size:22px}
 .pmid{display:flex;gap:18px;align-items:center;justify-content:center}
 .pb.mid{width:64px;height:38px;border-radius:8px;border-width:2px}
@@ -697,8 +698,8 @@ document.querySelectorAll('#pad .pb').forEach(b=>{
   b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
   b.addEventListener('contextmenu',e=>e.preventDefault());
 });
-/* mando físico (Gamepad API, por POSICIÓN como el táctil): abajo B esquiva · derecha A salto · izquierda Y patada · arriba X barra/lanzar · X mancuerna · Y wall ball · R1 cambio · L1 foto · Start pausa · Select controles */
-const GP_MAP={0:'dodge',1:'j',2:'k',3:'z',4:'v',5:'swap',12:'up',13:'down',14:'left',15:'right'};let gpPrev={};
+/* mando físico (Gamepad API, disposición Xbox): A abajo salto · B derecha esquiva · X izquierda barra/lanzar · Y arriba patada · X mancuerna · Y wall ball · R1 cambio · L1 foto · Start pausa · Select controles */
+const GP_MAP={0:'j',1:'dodge',2:'z',3:'k',4:'v',5:'swap',12:'up',13:'down',14:'left',15:'right'};let gpPrev={};
 function pollPad(){const pads=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const p of pads)if(p&&p.connected){gp=p;break}
   if(!gp){PAD.x=PAD.y=0;return}
   const ax=gp.axes[0]||0,ay=gp.axes[1]||0,dz=.2;PAD.x=Math.abs(ax)>dz?ax:0;PAD.y=Math.abs(ay)>dz?ay:0;
