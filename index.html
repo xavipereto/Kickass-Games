@@ -1057,6 +1057,7 @@ for(const k in ANIM_ALL){const U=ANIM_ALL[k].u;if(U.mu)U.mu*=1.1;if(U.hsw)U.hsw*
   A.xseq=new Set(Object.keys(d.fr));A.ximg=img;const xf={};for(const q in d.fr){A.fr[q]=d.fr[q];A.u[q]=d.u[q];xf[q]=d.fr[q]}
   img.onload=()=>{A.xok=true;setTimeout(()=>makePink(A,img,xf),0)};img.src=d.atlas}})();
 // fotograma del impacto de cada golpe de barra (Ludo), por atleta
+const RUN16=1.6; // las carreras de Ludo traen ~2 zancadas en 16 fotogramas: más recorrido por vuelta = piernas a ritmo real
 const KAS_K={atl_bar:6,atl_f:7}; // primer fotograma de la patada en «patada_culo»
 const ATK_IMP={atl_bar:{atk1:4,atk2:11,atk3:12},atl_f:{atk1:4,atk2:10,atk3:7}};
 const IDLE_PP=[0,1,2,3,2,1];
@@ -1065,7 +1066,7 @@ function animSeq(o,A){ // controlador de estados → {seq,i}
   const dx=o.x-an.lx,dy=o.y-an.ly;an.lx=o.x;an.ly=o.y;
   if(o.kind==='photog'&&F.shoot&&G.mode2==='photo'&&G.ph){const t=G.ph.t; // levantar cámara → apuntar (agachado) → FLASH → bajar
     const ft=G.ph.ft||1.7;if(t<.5)return{seq:'shoot',i:0};if(t<ft)return F.shoot2?{seq:'shoot2',i:t<ft-.6?0:1}:{seq:'shoot',i:1};if(t<ft+.3)return{seq:'shoot',i:2};return{seq:'shoot',i:3}}
-  if(st==='walk'&&o.run&&F.run&&!(o.kind==='ath'&&o.carry)){const n=F.run.length,cy=A.runCycle;an.dist+=Math.min(cy/n*.4,Math.hypot(dx,dy*1.2));return{seq:'run',i:Math.floor(an.dist/(cy/n))%n}}
+  if(st==='walk'&&o.run&&F.run&&!(o.kind==='ath'&&o.carry)){const n=F.run.length,cy=A.runCycle*(n>=16?RUN16:1);an.dist+=Math.min(cy/n*.4,Math.hypot(dx,dy*1.2));return{seq:'run',i:Math.floor(an.dist/(cy/n))%n}}
   if(o.kind==='ath'){
     const L16=q=>F[q]&&F[q].length>=16;
     if(L16('kas')){ // agarre y patada en el culo (Ludo); si hay animación de «agarrar» buena, se usa para el agarre
@@ -1079,13 +1080,13 @@ function animSeq(o,A){ // controlador de estados → {seq,i}
     if(o.carry==='db'||st==='throw'){ // mancuerna (Ludo)
       if(st==='throw'&&L16('dbt'))return{seq:'dbt',i:t<.2?Math.floor(t/.2*7):Math.min(15,7+Math.floor((t-.2)/.22*9))};
       if(st==='hop'&&L16('dbh')){if(o.hph===0)return{seq:'dbh',i:t<.035?2:3};if(o.hph===2)return{seq:'dbh',i:Math.min(15,9+Math.floor(t/.16*7))};const v=o.vz||0;return{seq:'dbh',i:v>250?4:v>120?5:v>0?6:v>-120?7:8}}
-      if(st==='walk'&&o.run&&L16('dbr')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'dbr',i:Math.floor(an.dist/((A.runCycle||110)/16))%16}}
+      if(st==='walk'&&o.run&&L16('dbr')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'dbr',i:Math.floor(an.dist/((A.runCycle||110)*RUN16/16))%16}}
       if(st==='walk'&&L16('dbw')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'dbw',i:Math.floor(an.dist/((A.cycle||100)/16))%16}}
       if(st==='idle'&&L16('dbi'))return{seq:'dbi',i:Math.floor((o.bobT||0)*9)%16};}
     if(o.carry==='wb'||st==='slam'){ // wall ball (Ludo)
       if(st==='slam'&&L16('wbt'))return{seq:'wbt',i:t<.26?Math.floor(t/.26*10):Math.min(15,10+Math.floor((t-.26)/.34*6))};
       if(st==='hop'&&L16('wbh')){if(o.hph===0)return{seq:'wbh',i:t<.035?2:3};if(o.hph===2)return{seq:'wbh',i:Math.min(15,10+Math.floor(t/.16*6))};const v=o.vz||0;return{seq:'wbh',i:v>250?4:v>120?5:v>0?6:v>-120?7:v>-250?8:9}}
-      if(st==='walk'&&o.run&&L16('wbr')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'wbr',i:Math.floor(an.dist/((A.runCycle||110)/16))%16}}
+      if(st==='walk'&&o.run&&L16('wbr')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'wbr',i:Math.floor(an.dist/((A.runCycle||110)*RUN16/16))%16}}
       if(st==='walk'&&L16('wbw')){an.dist+=Math.min(20,Math.hypot(dx,dy*1.2));return{seq:'wbw',i:Math.floor(an.dist/((A.cycle||100)/16))%16}}
       if(st==='idle'&&L16('wbi'))return{seq:'wbi',i:Math.floor((o.bobT||0)*9)%16};}
     if(st==='atk'){const q='atk'+((o.combo||0)+1);if(L16(q)){const d=o.dur||.4,h=o.hitT||d*.4,I=(ATK_IMP[o.pal&&o.pal.spr]||ATK_IMP.atl_bar)[q];
