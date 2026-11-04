@@ -1317,7 +1317,7 @@ const canHit=e=>e.st!=='dying'&&e.st!=='grabbed'&&e.st!=='kicked'&&e.st!=='kdown
 function nearestAth(e){const [a0,b0]=G.ath,up=x=>!ATH_DOWN.has(x.st);const a=up(a0)?a0:b0,b=up(b0)?b0:a0;return Math.abs(a.x-e.x)+Math.abs(a.y-e.y)*2<=Math.abs(b.x-e.x)+Math.abs(b.y-e.y)*2||b.st==='hurt'&&false?a:b}
 function attackers(){let n=0;for(const e of G.en)if(e.st==='windup'||e.st==='strike')n++;return n}
 function shout(e){if(JT[e.type]&&JT[e.type].mute)return;musicDuck(.45,900);e.shout=1.1;e.shoutTxt=e.type==='chief'?pick(['¡ÚLTIMOS DIEZ SEGUNDOS!','¡TRES, DOS, UNO!','¡QUE SUENE!','¡SUBE ESE VOLUMEN!']):SHOUTS[Math.floor(Math.random()*SHOUTS.length)]}
-function killE(e,dir){e.st='dying';e.t=0;e.vx=dir*240;e.flash=.15;G.kills++;const v=e.val+G.combo*5;G.score+=v;ftext(e.x,e.y-70,'+'+v,'#ffd23f',12);photoCharge(10);burst(e.x,e.y-30,12,'#ffd23f',170);(/^(base|flag|chief|acm)$/.test(e.type)&&smpPlay('ko',1))||SFX.hit();
+function killE(e,dir){e.st='dying';e.t=0;e.vx=dir*240;e.flash=.15;if(!e.tut){G.kills++;const v=e.val+G.combo*5;G.score+=v;ftext(e.x,e.y-70,'+'+v,'#ffd23f',12);photoCharge(10)}burst(e.x,e.y-30,12,'#ffd23f',170);(/^(base|flag|chief|acm)$/.test(e.type)&&smpPlay('ko',1))||SFX.hit();
   /* los extras ya no caen de los jueces: salen de los cajones (c_crate.js) */}
 function hurtE(e,dmg,dir,kd,kb){
   if(G.power>0){dmg=e.type==='chief'?dmg*2:Math.max(dmg,e.hp+1);burst(e.x,e.y-40,10,'#ff2bd6',200)}
@@ -1610,6 +1610,7 @@ const POLA_T=5.1;
 function startPhoto(){photoSndLoad();G.mode2='photo';const v=smpPlay('foto_voz',1);if(v)musicDuck(.4,2400);G.ph={t:0,fired:false,c:v?[1.01,1.39,1.77]:[.8,1.1,1.4],ft:v?2.22:1.7};G.ath.forEach(a=>{a.st='pose';a.t=0});G.photog.st='idle';SFX.beep()}
 function photoFlash(){
   const lead=G.ath[0];G.flash=1;G.shake=.5;G.photo=0;G.photoFull=false;if(!G.ph||!G.ph.sample)SFX.flash();musicDuck(.25,900);G.polaroid=POLA_T;{const n=(POLA[G.o.pair]||POLA.X).length;let i=Math.floor(Math.random()*n);if(n>1&&i===G.polaI)i=(i+1)%n;G.polaI=i}
+  if(G.tut&&!G.tut.done){for(const e of G.en)if(e.tut&&e.st!=='dying'){killE(e,e.x>=lead.x?1:-1)}tutEv(lead,'foto')}
   for(const e of G.en){if(e.st==='dying')continue;if(Math.abs(e.x-lead.x)<320){const dir=e.x>=lead.x?1:-1;if(e.type==='chief'){e.hp-=bossCap(e,20);e.flash=.3;ftext(e.x,e.y-110,'-20','#ffd23f',11);continue}e.hp-=45;if(e.hp<=0)killE(e,dir);else{e.st='stun';e.t=0;e.stunDur=3;e.vx=dir*360;e.vy=0;e.flash=.3;G.score+=150;ftext(e.x,e.y-70,'+150','#ffd23f',11)}}}
   const pg=G.photog;ring(pg.x,pg.y-36,260);burst(pg.x,pg.y-36,26,'#ffffff',320);
 }
@@ -1805,29 +1806,30 @@ const TUT_STEPS=[
   {id:'crate',txt:'ROMPE EL CAJÓN',need:1,sub:'golpéalo: dentro hay material'},
   {id:'pick',txt:'COGE LA WALL BALL',need:1,sub:'pasa por encima'},
   {id:'slam',txt:'ESTÁMPALA',need:1,sub:'tumba a todos los que pille'},
+  {id:'foto',txt:'¡MODO FOTO!',need:1,sub:'foto de equipo: ¡todos al suelo!'},
 ];
 const TUT_STEP_MAX=9; // si alguien se atasca, el paso se da por hecho solo
 let G_FORCE_TUT=false;
 function tutWanted(){if(G_FORCE_TUT){G_FORCE_TUT=false;return true}const h=location.hash||'';if(/tut/.test(h))return true;if(/skip/.test(h))return false; // las pruebas automáticas (#skip) no lo ven
   try{return !localStorage.getItem('nrb_tut')}catch(e){return false}}
-function tutStart(){G.tut={i:0,n:0,t:0,ok:0,done:false,endT:0,lastX:G.ath[0].x};G.hintT=99}
+function tutStart(){G.tut={steps:TUT_STEPS.filter(s=>s.id!=='foto'||G.photog),i:0,n:0,t:0,ok:0,done:false,endT:0,lastX:G.ath[0].x};G.hintT=99}
 function tutPadMode(){return app.classList.contains('touch')||(window.__padT&&performance.now()-window.__padT<60000)}
-function tutKey(id){const p=tutPadMode();return({atk:p?'X':'Z',kas:p?'X':'Z',crate:p?'X':'Z',slam:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
-const TUT_COL={X:'#5aa0ff',Y:'#ffd23f',A:'#3ddc84',B:'#ff4a5a'};
+function tutKey(id){const p=tutPadMode();return({foto:p?'L1':'V',atk:p?'X':'Z',kas:p?'X':'Z',crate:p?'X':'Z',slam:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
+const TUT_COL_=0;const TUT_COL={X:'#5aa0ff',Y:'#ffd23f',A:'#3ddc84',B:'#ff4a5a'};
 function tutEv(a,id,v){const T=G.tut;if(!T||T.done||a!==G.ath[0])return;
-  if(T.ok>0){const nx=TUT_STEPS[T.i+1];if(nx&&nx.id===id)T.pend=(T.pend||0)+(v||1);return} // lo que haga durante el «¡BIEN!» cuenta para el paso siguiente
-  const s=TUT_STEPS[T.i];if(s.id!==id)return;T.n+=v||1;if(T.n>=s.need)tutOk()}
+  if(T.ok>0){const nx=T.steps[T.i+1];if(nx&&nx.id===id)T.pend=(T.pend||0)+(v||1);return} // lo que haga durante el «¡BIEN!» cuenta para el paso siguiente
+  const s=T.steps[T.i];if(s.id!==id)return;T.n+=v||1;if(T.n>=s.need)tutOk()}
 function tutOk(){const T=G.tut;T.ok=.55;SFX.pick();const L=G.ath[0];ftext(L.x,L.y-92,'¡BIEN!','#3ddc84',13)}
 function tutEnd(skipped){const T=G.tut;if(!T||T.done)return;for(const e of G.en)if(e.tut){e.st='dying';e.t=0;e.vx=0}T.done=true;T.endT=1.6;G.hintT=99;try{localStorage.setItem('nrb_tut','1')}catch(e){}
   gcEv(skipped?'tutorial-omitido':'tutorial-completo',skipped?'Tutorial omitido':'Tutorial completo');bigMsg(skipped?'¡A POR ELLOS! →':'¡LISTOS! A POR LOS JUECES →',1.6);SFX.go()}
 function updTut(dt){const T=G.tut;if(!T)return;
   if(T.done){T.endT-=dt;if(T.endT<=0)G.tut=null;return}
   const L=G.ath[0];
-  if(T.ok>0){T.ok-=dt;if(T.ok<=0){T.i++;T.n=T.pend||0;T.pend=0;T.t=0;T.lastX=L.x;if(T.i>=TUT_STEPS.length)tutEnd(false);else if(T.n>=TUT_STEPS[T.i].need)tutOk()}return}
-  T.t+=dt;const s=TUT_STEPS[T.i];tutProps(s.id,L);
+  if(T.ok>0){T.ok-=dt;if(T.ok<=0){T.i++;T.n=T.pend||0;T.pend=0;T.t=0;T.lastX=L.x;if(T.i>=T.steps.length)tutEnd(false);else if(T.n>=T.steps[T.i].need)tutOk()}return}
+  T.t+=dt;const s=T.steps[T.i];tutProps(s.id,L);
   if(s.id==='move'){T.n+=Math.abs(L.x-T.lastX)+Math.abs(L.y-(T.lastY==null?L.y:T.lastY))*.6;if(T.n>=s.need)tutOk()}
   T.lastX=L.x;T.lastY=L.y;
-  if(T.t>TUT_STEP_MAX)tutOk();
+  if(T.t>TUT_STEP_MAX){if(s.id==='foto'){if(G.mode2!=='photo'&&L.st!=='pose'){G.photo=100;startPhoto()}}else tutOk()}
 }
 // atrezo del entrenamiento: un juez de prácticas que no ataca y un cajón con una wall ball dentro
 function tutProps(id,L){const T=G.tut;
@@ -1836,6 +1838,11 @@ function tutProps(id,L){const T=G.tut;
     if(e){e.cd=9;e.shout=0}}
   if(id==='crate'&&!G.crates.some(c=>c.tut&&c.hp>0)&&!T.crateDone){G.crates.push({kind:'crate',x:Math.min(L.x+70,425),y:clamp(L.y,FY0+8,FY1-6),hp:3,f:0,bt:-1,shake:0,items:['wb'],tut:true})}
   if(id==='pick'&&L.carry)tutOk();
+  if(id==='foto'&&!T.crowd){T.crowd=true;G.photo=100;G.photoFull=true;const types=['base','flag','brute','acm','acf'];
+    for(let k=0;k<20;k++){const left=k%2===0,dx=40+Math.floor(k/2)*26+Math.random()*12,x=clamp(L.x+(left?-dx:dx),G.cam+18,G.cam+W-18);
+      const e=mkJudge(types[k%types.length],x,FY0+8+((k*37)%(FY1-FY0-16)),G.cat);e.tut=true;e.val=0;e.face=x<L.x?1:-1;e.cd=9;G.en.push(e)}
+    bigMsg('¡TE RODEAN!',1.3)}
+  if(id==='foto')for(const e of G.en)if(e.tut)e.cd=9;
   if(id==='pick'&&!L.carry&&!G.pick.some(p=>p.type==='wb')&&!G.crates.some(c=>c.tut&&c.hp>0))G.pick.push({kind:'pick',type:'wb',x:Math.min(L.x+50,425),y:L.y,t:0,pz:0,pvz:0,pvx:0});
 }
 // mando o teclado: botón redondo con la letra; teclado: tecla rectangular
@@ -1851,9 +1858,9 @@ function tutKeys(g,cx,y,id){ // dibuja una o varias teclas (A+Y) centradas
   const pad=tutPadMode(),ws=ks.map(k=>pad?22:Math.max(22,g.measureText(k).width+14)),tot=ws.reduce((a,b)=>a+b,0)+(ks.length-1)*16;g.restore();
   let x=cx-tot/2;ks.forEach((k,i)=>{tutBtn(g,x+ws[i]/2,y,k);x+=ws[i];if(i<ks.length-1){T(g,'+',x+8,y+5,F_D(14),'#fff','center','#04101a');x+=16}})}
 function drawTut(g){const Q=G.tut;if(!Q||Q.done)return;
-  const s=TUT_STEPS[Math.min(Q.i,TUT_STEPS.length-1)],cx=Math.round(W/2),y=92,w=250,h=s.sub?70:56,ok=Q.ok>0;
+  const s=Q.steps[Math.min(Q.i,Q.steps.length-1)],cx=Math.round(W/2),y=92,w=250,h=s.sub?70:56,ok=Q.ok>0;
   g.save();g.globalAlpha=.88;R(g,cx-w/2,y-20,w,h,'rgba(4,14,26,.82)');g.globalAlpha=1;g.strokeStyle=ok?'#3ddc84':'#ffd23f';g.lineWidth=2;g.strokeRect(cx-w/2+.5,y-19.5,w-1,h-1);g.restore();
-  T(g,'ENTRENAMIENTO '+(Math.min(Q.i,TUT_STEPS.length-1)+1)+'/'+TUT_STEPS.length,cx,y-7,F_U(9),'#08C5C1','center');
+  T(g,'ENTRENAMIENTO '+(Math.min(Q.i,Q.steps.length-1)+1)+'/'+Q.steps.length,cx,y-7,F_U(9),'#08C5C1','center');
   // tecla(s) a la izquierda del texto
   g.save();g.font="19px 'Bangers','Bungee',Impact,sans-serif";const tw=g.measureText(s.txt).width;g.restore();
   const kw=s.id==='akick'?(tutPadMode()?60:70):s.id==='roll'&&!tutPadMode()?40:26,tot=kw+8+tw,x0=cx-tot/2;
@@ -1863,7 +1870,7 @@ function drawTut(g){const Q=G.tut;if(!Q||Q.done)return;
   if(s.sub)T(g,s.sub,cx,y+38,F_U(9),'#dfe6ee','center');
   if(s.id==='atk'&&!ok)T(g,Math.min(Q.n,s.need)+' / '+s.need,cx+w/2-10,y-7,F_U(9),'#fff','right');
   // puntos de progreso
-  for(let i=0;i<TUT_STEPS.length;i++){g.fillStyle=i<Q.i||(i===Q.i&&ok)?'#3ddc84':i===Q.i?'#ffd23f':'#3a4656';g.beginPath();g.arc(cx-(TUT_STEPS.length-1)*6+i*12,y+h-26,3,0,7);g.fill()}
+  for(let i=0;i<Q.steps.length;i++){g.fillStyle=i<Q.i||(i===Q.i&&ok)?'#3ddc84':i===Q.i?'#ffd23f':'#3a4656';g.beginPath();g.arc(cx-(Q.steps.length-1)*6+i*12,y+h-26,3,0,7);g.fill()}
   // cómo omitirlo
   T(g,tutKey('skip')+' omitir',cx+w/2-6,y+h-26,F_U(8),'#8fa0b4','right');
 }
