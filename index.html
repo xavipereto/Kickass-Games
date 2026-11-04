@@ -704,7 +704,7 @@ const GP_MAP={0:'j',1:'dodge',2:'z',3:'k',4:'v',5:'swap',12:'up',13:'down',14:'l
 function pollPad(){const pads=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const p of pads)if(p&&p.connected){gp=p;break}
   if(!gp){PAD.x=PAD.y=0;return}
   const ax=gp.axes[0]||0,ay=gp.axes[1]||0,dz=.2;PAD.x=Math.abs(ax)>dz?ax:0;PAD.y=Math.abs(ay)>dz?ay:0;
-  const any=gp.buttons.some(b=>b.pressed)||PAD.x||PAD.y;if(any&&app.classList.contains('touch'))setInputMode('keys');
+  const any=gp.buttons.some(b=>b.pressed)||PAD.x||PAD.y;if(any)window.__padT=performance.now();if(any&&app.classList.contains('touch'))setInputMode('keys');
   gp.buttons.forEach((b,i)=>{const was=gpPrev[i],is=b.pressed;gpPrev[i]=is;if(is===was)return;
     if(i===9){if(is)padSpecial('start');return}if(i===8){if(is)padSpecial('select');return}
     const k=GP_MAP[i];if(!k)return;if(is){if(mode==='play')pressK(k)}else releaseK(k)});
@@ -1400,26 +1400,26 @@ function updSwap(dt){if(!(G.swapT>0))return;const L=G.swapA,P=G.swapB,t=.95-G.sw
   const j=animHas(L,'hifive')?0:(t>.12&&t<.7?Math.sin((t-.12)/.58*Math.PI):0);L.z=P.z=j*26;
   if(!G.swapDone&&t>=.42){G.swapDone=true;const x=(L.x+P.x)/2,y=L.y-(animHas(L,'hifive')?96:58)-L.z;burst(x,y,16,'#ffd23f',220);ring(x,y,34);G.shake=Math.max(G.shake,.12);SFX.hit()}
   if(G.swapT<=0){if(L.carry&&!P.carry){P.carry=L.carry;L.carry=null}L.z=P.z=0;L.st=P.st='idle';L.lead=false;P.lead=true;G.ath=[P,L];G.swapT=0;G.tocaT=1.1;G.tocaE=P}}
-function startAtk(a){const i=a.comboT>0?a.nextC:0;a.combo=i;if(i!==1)smpPlay('bar_'+((a.pal&&a.pal.spr)||''),.9); // voz en el 1.º y el 3.º golpe del combo
+function startAtk(a){tutEv(a,'atk');const i=a.comboT>0?a.nextC:0;a.combo=i;if(i!==1)smpPlay('bar_'+((a.pal&&a.pal.spr)||''),.9); // voz en el 1.º y el 3.º golpe del combo
   a.nextC=(i+1)%3;a.dur=[.4,.4,.54][i];a.hitT=a.dur*.4;a.st='atk';a.t=0;a.hit=false;a.buf=false;a.comboT=1}
 /* ===== patada (chute a la cadera) y salto ===== */
-function startKick(a){a.st='pkick';a.t=0;a.hit=false;SFX.swing()}
+function startKick(a){tutEv(a,'kick');a.st='pkick';a.t=0;a.hit=false;SFX.swing()}
 function doKick(a,air){const reach=air?58:64,dmg=(air?16:14)*(a.lead?1:.8);let n=0;
   for(const e of G.en){if(!canHit(e))continue;const dx=(e.x-a.x)*a.face;if(dx>-8&&dx<=reach&&Math.abs(e.y-a.y)<=18){hurtE(e,dmg,a.face,true,air?240:260);n++}}
   n+=crateMelee(a,reach,2);n+=returnBalls(a,reach);
   if(n){G.hitstop=.08;G.shake=Math.max(G.shake,.18);SFX.hit();photoCharge(7*Math.min(n,3));burst(a.x+a.face*reach*.8,a.y-34-(a.z||0),8,'#fff6c0',160)}else SFX.swing()}
-function startHop(a){a.st='hop';a.t=0;a.z=0;a.vz=0;a.hph=0;a.jk=false;a.jkHit=false;a.jkT=0}
+function startHop(a){tutEv(a,'hop');a.st='hop';a.t=0;a.z=0;a.vz=0;a.hph=0;a.jk=false;a.jkHit=false;a.jkT=0}
 function updHop(a,inp,dt){let vx=inp.ax*96,vy=inp.ay*42;if(inp.ax)a.face=inp.ax>0?1:-1;
   if(a.hph===0){vx*=.25;vy*=.25;if(a.t>=.07){a.hph=1;a.vz=370;smpPlay('salto_c',.45,1.1)||SFX.roll()}}
   else if(a.hph===1){a.vz-=1150*dt;a.z=Math.max(0,a.z+a.vz*dt);
-    if((inp.k||inp.z)&&!a.jk&&!a.carry){a.jk=true;a.jkT=0}
+    if((inp.k||inp.z)&&!a.jk&&!a.carry){a.jk=true;a.jkT=0;tutEv(a,'akick')}
     if(a.jk){a.jkT+=dt;if(!a.jkHit&&a.jkT>=.05){a.jkHit=true;doKick(a,true)}}
     if(a.z<=0&&a.vz<0){a.z=0;a.hph=2;a.t=0;G.shake=Math.max(G.shake,.05);smpPlay('salto',a.carry?.95:.75,a.carry?.9:1)}}
   else{vx=0;vy=0;if(a.t>=.16){a.st='idle';a.jk=false;a.jkHit=false}}
   return[vx,vy]}
-function startThrow(a){a.carry=null;smpPlay('db_'+((a.pal&&a.pal.spr)||''),1);a.st='throw';a.t=0;a.hit=false;a.throwCd=.55;a.tcd=1.2}
-function startSlam(a){smpPlay('wb_'+((a.pal&&a.pal.spr)||''),1);a.carry=null;a.st='slam';a.t=0;a.hit=false;a.inv=Math.max(a.inv,.35)}
-function startRoll(a,inp){a.st='roll';a.t=0;a.inv=.4;a.rollCd=.75;const dx=inp.ax||a.face;a.rvx=Math.sign(dx)*250;a.rvy=(inp.ay||0)*90;if(inp.ax)a.face=inp.ax>0?1:-1;SFX.roll()}
+function startThrow(a){tutEv(a,'atk');a.carry=null;smpPlay('db_'+((a.pal&&a.pal.spr)||''),1);a.st='throw';a.t=0;a.hit=false;a.throwCd=.55;a.tcd=1.2}
+function startSlam(a){tutEv(a,'atk');smpPlay('wb_'+((a.pal&&a.pal.spr)||''),1);a.carry=null;a.st='slam';a.t=0;a.hit=false;a.inv=Math.max(a.inv,.35)}
+function startRoll(a,inp){tutEv(a,'roll');a.st='roll';a.t=0;a.inv=.4;a.rollCd=.75;const dx=inp.ax||a.face;a.rvx=Math.sign(dx)*250;a.rvy=(inp.ay||0)*90;if(inp.ax)a.face=inp.ax>0?1:-1;SFX.roll()}
 function doSlam(a){
   const cx=a.x+a.face*46,cy=a.y;let n=0;crateArea(cx,cy,88,48,3);
   for(const e of G.en){if(e.st==='dying'||e.inv>0)continue;if(Math.abs(e.x-cx)<88&&Math.abs(e.y-cy)<48){hurtE(e,26,e.x>=a.x?1:-1,true,240);n++}}
@@ -1561,7 +1561,7 @@ function updStreet(dt){
   if(G.vendor){G.vendor.t+=dt;G.vendor.bobT+=dt}
   if(G.hitstop>0){G.hitstop-=dt;updFx(dt*.4);return}
   const [lead,part]=G.ath;
-  if(edge.swap)trySwap();
+  if(G.tut&&!G.tut.done){if(edge.swap)tutEnd(true)}else if(edge.swap)trySwap();
   updSwap(dt);
   const inp={ax:axisX(),ay:axisY(),z:!!edge.z,k:!!edge.k,j:!!edge.j,dodge:!!edge.dodge};
   if(edge.v&&G.photog&&G.photo>=100&&(lead.st==='idle'||lead.st==='walk')&&athUp(G.ath[1])&&G.ath[1].st!=='help')return startPhoto();
@@ -1569,7 +1569,7 @@ function updStreet(dt){
   if(!athUp(lead)){finishRun('lost');return}
   updAth(lead,inp,dt);
   updAth(part,athUp(part)&&part.st!=='help'?partnerInput(part,lead,dt):{ax:0,ay:0},dt);
-  updRescue(dt);
+  updRescue(dt);updTut(dt);if(G.tut&&!G.tut.done)lead.x=Math.min(lead.x,440);
   if(G.photog)updPhotog(G.photog,lead,dt);
   for(const a of G.ath){a.x=clamp(a.x,Math.max(14,G.cam+16),Math.min(LEVEL_W-16,G.cam+W-16))}
   for(const e of G.en)updJudge(e,dt);
@@ -1582,7 +1582,7 @@ function updStreet(dt){
   G.comboT-=dt;if(G.comboT<=0)G.combo=0;
   // oleadas
   const w=WAVES[G.waveI];
-  if(w&&G.lockX==null&&lead.x>=w.x){spawnWave(w);G.waveI++}
+  if(w&&G.lockX==null&&lead.x>=w.x&&!(G.tut&&!G.tut.done)){spawnWave(w);G.waveI++}
   if(G.lockX!=null&&G.en.length===0){G.lockX=null;G.cleared=true;G.goT=0;SFX.go();bigMsg(G.waveI>=WAVES.length?'¡CALLE LIBRE! AL BOX →':'¡GO! →',1.4)}
   if(G.waveI>=WAVES.length&&G.lockX==null&&G.en.length===0&&lead.x>=DOOR_X)enterBox();
   // cámara
@@ -1779,6 +1779,67 @@ function drawCrate(g,c){
   let al=1;if(c.bt>2.8)al=clamp(1-(c.bt-2.8)/.8,0,1);
   if(c.bt<0){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(c.x),Math.round(c.y),20,5,0,0,7);g.fill()}
   g.save();g.globalAlpha=al;g.imageSmoothingQuality='high';g.drawImage(img,f[0],f[1],f[2],f[3],Math.round(c.x+sh-f[4]*u),Math.round(c.y-f[5]*u),f[2]*u,f[3]*u);g.restore()}
+/* ===== ENTRENAMIENTO: tutorial jugando (solo la primera partida; se puede omitir) =====
+   Pasos cortos que se completan haciendo el movimiento. Mientras dura no entra ninguna oleada. */
+const TUT_STEPS=[
+  {id:'move',txt:'MUÉVETE',need:60},
+  {id:'atk', txt:'PEGA CON LA BARRA',need:3,sub:'3 golpes seguidos = combo'},
+  {id:'kick',txt:'PATADA',need:1},
+  {id:'hop', txt:'SALTA',need:1},
+  {id:'akick',txt:'SALTA + PATADA',need:1,sub:'patada en el aire'},
+  {id:'roll',txt:'ESQUIVA',need:1,sub:'eres invencible mientras ruedas'},
+];
+const TUT_STEP_MAX=9; // si alguien se atasca, el paso se da por hecho solo
+function tutWanted(){const h=location.hash||'';if(/tut/.test(h))return true;if(/skip/.test(h))return false; // las pruebas automáticas (#skip) no lo ven
+  try{return !localStorage.getItem('nrb_tut')}catch(e){return false}}
+function tutStart(){G.tut={i:0,n:0,t:0,ok:0,done:false,endT:0,lastX:G.ath[0].x};G.hintT=99}
+function tutPadMode(){return app.classList.contains('touch')||(window.__padT&&performance.now()-window.__padT<60000)}
+function tutKey(id){const p=tutPadMode();return({atk:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
+const TUT_COL={X:'#5aa0ff',Y:'#ffd23f',A:'#3ddc84',B:'#ff4a5a'};
+function tutEv(a,id,v){const T=G.tut;if(!T||T.done||a!==G.ath[0])return;
+  if(T.ok>0){const nx=TUT_STEPS[T.i+1];if(nx&&nx.id===id)T.pend=(T.pend||0)+(v||1);return} // lo que haga durante el «¡BIEN!» cuenta para el paso siguiente
+  const s=TUT_STEPS[T.i];if(s.id!==id)return;T.n+=v||1;if(T.n>=s.need)tutOk()}
+function tutOk(){const T=G.tut;T.ok=.55;SFX.pick();const L=G.ath[0];ftext(L.x,L.y-92,'¡BIEN!','#3ddc84',13)}
+function tutEnd(skipped){const T=G.tut;if(!T||T.done)return;T.done=true;T.endT=1.6;G.hintT=99;try{localStorage.setItem('nrb_tut','1')}catch(e){}
+  gcEv(skipped?'tutorial-omitido':'tutorial-completo',skipped?'Tutorial omitido':'Tutorial completo');bigMsg(skipped?'¡A POR ELLOS! →':'¡LISTOS! A POR LOS JUECES →',1.6);SFX.go()}
+function updTut(dt){const T=G.tut;if(!T)return;
+  if(T.done){T.endT-=dt;if(T.endT<=0)G.tut=null;return}
+  const L=G.ath[0];
+  if(T.ok>0){T.ok-=dt;if(T.ok<=0){T.i++;T.n=T.pend||0;T.pend=0;T.t=0;T.lastX=L.x;if(T.i>=TUT_STEPS.length)tutEnd(false);else if(T.n>=TUT_STEPS[T.i].need)tutOk()}return}
+  T.t+=dt;const s=TUT_STEPS[T.i];
+  if(s.id==='move'){T.n+=Math.abs(L.x-T.lastX)+Math.abs(L.y-(T.lastY==null?L.y:T.lastY))*.6;if(T.n>=s.need)tutOk()}
+  T.lastX=L.x;T.lastY=L.y;
+  if(T.t>TUT_STEP_MAX)tutOk();
+}
+// mando o teclado: botón redondo con la letra; teclado: tecla rectangular
+function tutBtn(g,x,y,k){g.save();g.font="17px 'Bangers','Bungee',Impact,sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
+  const pad=tutPadMode(),w=pad?22:Math.max(22,g.measureText(k).width+14),col=pad?(TUT_COL[k]||'#fff'):'#fff';
+  g.fillStyle='#20222b';g.strokeStyle='#000';g.lineWidth=4;g.beginPath();
+  if(pad)g.arc(x,y,11,0,7);else{const r=5,l=x-w/2,t=y-11;g.moveTo(l+r,t);g.arcTo(l+w,t,l+w,t+22,r);g.arcTo(l+w,t+22,l,t+22,r);g.arcTo(l,t+22,l,t,r);g.arcTo(l,t,l+w,t,r)}
+  g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=2;g.stroke();g.lineWidth=3;g.strokeStyle='#000';g.strokeText(k,x,y+1);g.fillStyle=col;g.fillText(k,x,y+1);g.restore();return w}
+function tutKeys(g,cx,y,id){ // dibuja una o varias teclas (A+Y) centradas
+  if(id==='move'){g.save();g.translate(cx,y);g.fillStyle='#20222b';g.strokeStyle='#000';g.lineWidth=4;g.beginPath();g.arc(0,0,12,0,7);g.fill();g.stroke();
+    g.fillStyle='#fff';for(const d of [0,1,2,3]){g.save();g.rotate(d*Math.PI/2);g.beginPath();g.moveTo(0,-10);g.lineTo(-3.5,-5.5);g.lineTo(3.5,-5.5);g.fill();g.restore()}g.restore();return}
+  const ks=tutKey(id).split('+');g.save();g.font="17px 'Bangers','Bungee',Impact,sans-serif";
+  const pad=tutPadMode(),ws=ks.map(k=>pad?22:Math.max(22,g.measureText(k).width+14)),tot=ws.reduce((a,b)=>a+b,0)+(ks.length-1)*16;g.restore();
+  let x=cx-tot/2;ks.forEach((k,i)=>{tutBtn(g,x+ws[i]/2,y,k);x+=ws[i];if(i<ks.length-1){T(g,'+',x+8,y+5,F_D(14),'#fff','center','#04101a');x+=16}})}
+function drawTut(g){const Q=G.tut;if(!Q||Q.done)return;
+  const s=TUT_STEPS[Math.min(Q.i,TUT_STEPS.length-1)],cx=Math.round(W/2),y=92,w=250,h=s.sub?70:56,ok=Q.ok>0;
+  g.save();g.globalAlpha=.88;R(g,cx-w/2,y-20,w,h,'rgba(4,14,26,.82)');g.globalAlpha=1;g.strokeStyle=ok?'#3ddc84':'#ffd23f';g.lineWidth=2;g.strokeRect(cx-w/2+.5,y-19.5,w-1,h-1);g.restore();
+  T(g,'ENTRENAMIENTO '+(Math.min(Q.i,TUT_STEPS.length-1)+1)+'/'+TUT_STEPS.length,cx,y-7,F_U(9),'#08C5C1','center');
+  // tecla(s) a la izquierda del texto
+  g.save();g.font="19px 'Bangers','Bungee',Impact,sans-serif";const tw=g.measureText(s.txt).width;g.restore();
+  const kw=s.id==='akick'?(tutPadMode()?60:70):s.id==='roll'&&!tutPadMode()?40:26,tot=kw+8+tw,x0=cx-tot/2;
+  tutKeys(g,x0+kw/2,y+14,s.id);
+  g.save();g.font="19px 'Bangers','Bungee',Impact,sans-serif";g.textBaseline='middle';g.textAlign='left';g.lineJoin='round';
+  const tx=x0+kw+8;g.fillStyle='#000';g.fillText(s.txt,tx+1.5,y+16.5);g.lineWidth=4;g.strokeStyle='#000';g.strokeText(s.txt,tx,y+14);g.fillStyle=ok?'#3ddc84':'#ffd23f';g.fillText(s.txt,tx,y+14);g.restore();
+  if(s.sub)T(g,s.sub,cx,y+38,F_U(9),'#dfe6ee','center');
+  if(s.id==='atk'&&!ok)T(g,Math.min(Q.n,s.need)+' / '+s.need,cx+w/2-10,y-7,F_U(9),'#fff','right');
+  // puntos de progreso
+  for(let i=0;i<TUT_STEPS.length;i++){g.fillStyle=i<Q.i||(i===Q.i&&ok)?'#3ddc84':i===Q.i?'#ffd23f':'#3a4656';g.beginPath();g.arc(cx-(TUT_STEPS.length-1)*6+i*12,y+h-26,3,0,7);g.fill()}
+  // cómo omitirlo
+  T(g,tutKey('skip')+' omitir',cx+w/2-6,y+h-26,F_U(8),'#8fa0b4','right');
+}
 
 /* ===== DIBUJO: CALLES + HUD ===== */
 const F_D=px=>px+'px Bungee,Impact,"Arial Black",sans-serif';
@@ -2066,8 +2127,9 @@ function drawHUD(g){
   if(G.combo>=2){const s=1+Math.min(.5,G.combo*.03);T(g,'COMBO ×'+G.combo,HR,62,F_D(Math.round(12*s)),'#ffd23f','right','#04101a')}
   if(G.arribaT>0){G.arribaT-=1/60;const sx=G.arribaX-Math.round(G.cam);drawTxt(g,'r_arriba',sx,G.arribaY-100-(1.2-G.arribaT)*20,22,clamp(G.arribaT*2,0,1))}
   if(G.bigT>0&&G.bigMsg)drawBig(g,G.bigMsg,104,clamp(G.bigT*2,0,1));
-  if(G.lockX==null&&G.en.length===0&&G.run>2&&G.phase==='street'&&!G.ph&&Math.floor(G.goT*2.5)%2===0&&G.waveI<WAVES.length){T(g,'GO ▶',W-40,130,F_D(22),'#ffd23f','center','#04101a')}
-  if(G.hintT<11&&!app.classList.contains('touch')&&!G.en.some(e=>e.type==='chief')){
+  if(G.lockX==null&&!G.tut&&G.en.length===0&&G.run>2&&G.phase==='street'&&!G.ph&&Math.floor(G.goT*2.5)%2===0&&G.waveI<WAVES.length){T(g,'GO ▶',W-40,130,F_D(22),'#ffd23f','center','#04101a')}
+  drawTut(g);
+  if(G.hintT<11&&!G.tut&&!app.classList.contains('touch')&&!G.en.some(e=>e.type==='chief')){
     g.globalAlpha=clamp((11-G.hintT)/1.5,0,1);R(g,70,H-24,W-140,18,'rgba(4,14,26,.78)');
     if(!app.classList.contains('touch'))T(g,0?'':'WASD/FLECHAS mover · Z barra/lanzar · X patada · C salto'+(G.photog?' · V foto':'')+' · ESPACIO esquiva · Q cambio',W/2,H-11,F_U(11),'#fff','center');g.globalAlpha=1;
   }
@@ -2580,7 +2642,7 @@ function startGame(o){
   gcEv('partida-empezada','Partida empezada');gcEv('categoria-'+String(o.cat).normalize('NFD').toLowerCase().replace(/[^a-z0-9]/g,''),'Categoría '+o.cat);gcEv('pareja-'+o.pair,'Pareja '+o.pair);
   lastOpts=o;audio();SFX.click();musicStart();photoSndLoad();smpLoadAll();
   try{localStorage.setItem('nrb_team',o.team)}catch(e){}
-  newGame(o);G.rkKey=null;
+  newGame(o);G.rkKey=null;if(tutWanted())tutStart();
   app.classList.toggle('nophoto',!o.photog);app.classList.remove('wod');setActLabel('BARRA');
   $('#menu').hidden=true;$('#results').hidden=true;$('#pause').hidden=true;
   mode='play';clearKeys();resize();app.classList.add('playing');
