@@ -1384,10 +1384,10 @@ function updBuy(a,dt){
   if(a.t>=1.4&&G.vendor.st==='give')G.vendor.st='idle';
   if(a.t>=2.0){a.st='idle';G.vendor.st='idle'}}
 /* ===== agarre + patada en el culo ===== */
-function startGrab(a,e){a.st='grab';a.t=0;a.tgt=e;a.face=e.x>a.x?1:-1;e.st='grabbed';e.t=0;e.vx=e.vy=0;e.face=a.face;e.grabber=a;e.shout=0;SFX.click();G.grabHint=1.5}
+function startGrab(a,e){tutEv(a,'grab');if(e.tut)e.hp=1;a.st='grab';a.t=0;a.tgt=e;a.face=e.x>a.x?1:-1;e.st='grabbed';e.t=0;e.vx=e.vy=0;e.face=a.face;e.grabber=a;e.shout=0;SFX.click();G.grabHint=1.5}
 function updGrab(a,inp,dt){const e=a.tgt;if(!e||e.st!=='grabbed'){a.st='idle';return}
   const k=Math.min(1,dt*14);e.x+=(a.x+a.face*27-e.x)*k;e.y+=(a.y-1-e.y)*k;e.face=a.face;
-  if(inp.z&&a.t>.12){a.st='kick';a.t=0;a.hit=false;return}
+  if(inp.z&&a.t>.12){tutEv(a,'kas');a.st='kick';a.t=0;a.hit=false;return}
   if(a.t>=1.6){e.st='hurt';e.t=0;e.vx=a.face*120;a.st='idle';a.tgt=null}}
 function updKick(a,dt){const e=a.tgt;
   if(!a.hit&&a.t>=.08&&e){a.hit=true;smpPlay('kick_'+((a.pal&&a.pal.spr)||''),1);
@@ -1429,8 +1429,8 @@ function updHop(a,inp,dt){let vx=inp.ax*96,vy=inp.ay*42;if(inp.ax)a.face=inp.ax>
     if(a.z<=0&&a.vz<0){a.z=0;a.hph=2;a.t=0;G.shake=Math.max(G.shake,.05);smpPlay('salto',a.carry?.95:.75,a.carry?.9:1)}}
   else{vx=0;vy=0;if(a.t>=.16){a.st='idle';a.jk=false;a.jkHit=false}}
   return[vx,vy]}
-function startThrow(a){tutEv(a,'atk');a.carry=null;smpPlay('db_'+((a.pal&&a.pal.spr)||''),1);a.st='throw';a.t=0;a.hit=false;a.throwCd=.55;a.tcd=1.2}
-function startSlam(a){tutEv(a,'atk');smpPlay('wb_'+((a.pal&&a.pal.spr)||''),1);a.carry=null;a.st='slam';a.t=0;a.hit=false;a.inv=Math.max(a.inv,.35)}
+function startThrow(a){tutEv(a,'atk');tutEv(a,'slam');a.carry=null;smpPlay('db_'+((a.pal&&a.pal.spr)||''),1);a.st='throw';a.t=0;a.hit=false;a.throwCd=.55;a.tcd=1.2}
+function startSlam(a){tutEv(a,'atk');tutEv(a,'slam');smpPlay('wb_'+((a.pal&&a.pal.spr)||''),1);a.carry=null;a.st='slam';a.t=0;a.hit=false;a.inv=Math.max(a.inv,.35)}
 function startRoll(a,inp){tutEv(a,'roll');a.st='roll';a.t=0;a.inv=.4;a.rollCd=.75;const dx=inp.ax||a.face;a.rvx=Math.sign(dx)*250;a.rvy=(inp.ay||0)*90;if(inp.ax)a.face=inp.ax>0?1:-1;SFX.roll()}
 function doSlam(a){
   const cx=a.x+a.face*46,cy=a.y;let n=0;crateArea(cx,cy,88,48,3);
@@ -1580,7 +1580,7 @@ function updStreet(dt){
   if(G.koT>0){G.koT-=dt;updFx(dt);if(G.koT<=0)finishRun('lost');return}
   if(!athUp(lead)){finishRun('lost');return}
   updAth(lead,inp,dt);
-  updAth(part,athUp(part)&&part.st!=='help'?partnerInput(part,lead,dt):{ax:0,ay:0},dt);
+  updAth(part,athUp(part)&&part.st!=='help'&&!(G.tut&&!G.tut.done)?partnerInput(part,lead,dt):{ax:0,ay:0},dt);
   updRescue(dt);updTut(dt);if(G.tut&&!G.tut.done)lead.x=Math.min(lead.x,440);
   if(G.photog)updPhotog(G.photog,lead,dt);
   for(const a of G.ath){a.x=clamp(a.x,Math.max(14,G.cam+16),Math.min(LEVEL_W-16,G.cam+W-16))}
@@ -1590,7 +1590,7 @@ function updStreet(dt){
   G.en=G.en.filter(e=>!e.dead);
   updProj(dt);
   G.pick=G.pick.filter(p=>{p.t+=dt;if(p.pz>0){p.pvz-=520*dt;p.pz=Math.max(0,p.pz+p.pvz*dt);p.x+=p.pvx*dt;if(p.pz===0)smpPlay(p.type==='wb'?'wbcae':'salto_c',p.type==='wb'?.6:.4);return true}if(Math.abs(p.x-lead.x)<16&&Math.abs(p.y-lead.y)<14&&!(lead.z>0)){if(p.type==='shake'){G.hp=Math.min(100,G.hp+28);ftext(lead.x,lead.y-70,'+28 SALUD','#3ddc84',11);SFX.pick();return false}
-    if(!lead.carry&&(lead.st==='idle'||lead.st==='walk')){lead.carry=p.type;ftext(lead.x,lead.y-80,p.type==='db'?'¡MANCUERNA!':'¡WALL BALL!','#ffd23f',11);SFX.pick();return false}}return true});
+    if(!lead.carry&&(lead.st==='idle'||lead.st==='walk')){lead.carry=p.type;tutEv(lead,'pick');ftext(lead.x,lead.y-80,p.type==='db'?'¡MANCUERNA!':'¡WALL BALL!','#ffd23f',11);SFX.pick();return false}}return true});
   G.comboT-=dt;if(G.comboT<=0)G.combo=0;
   // oleadas
   const w=WAVES[G.waveI];
@@ -1775,7 +1775,7 @@ const CRATE_IMG=(()=>{const i=new Image();i.src=CRATE.atlas;return i})();
 function crateLoot(){const r=()=>{const q=Math.random();return q<.4?'db':q<.75?'wb':'shake'};const a=r(),o=[a];if(Math.random()<.35){let b=r();if(b===a)b=a==='shake'?'db':'shake';o.push(b)}return o}
 function mkCrates(){return CRATE_POS.map(([x,y])=>({kind:'crate',x,y,hp:3,f:0,bt:-1,shake:0,items:crateLoot()}))}
 function crateHit(c,n,dir){if(c.hp<=0)return false;c.hp-=n;c.shake=.18;c.dir=dir||1;burst(c.x,c.y-20,6,'#e8b45a',150);
-  if(c.hp<=0){c.bt=0;SFX.boom();G.shake=Math.max(G.shake,.18);burst(c.x,c.y-18,16,'#f0c070',230);
+  if(c.hp<=0){if(c.tut&&G.tut){G.tut.crateDone=true;tutEv(G.ath[0],'crate')}c.bt=0;SFX.boom();G.shake=Math.max(G.shake,.18);burst(c.x,c.y-18,16,'#f0c070',230);
     c.items.forEach((it,k)=>G.pick.push({kind:'pick',type:it,x:c.x,y:clamp(c.y+4+k*6,FY0+6,FY1),t:0,pz:2,pvz:170+k*40,pvx:(c.dir||1)*(30+k*45)}))}
   else{c.f=3-c.hp;SFX.hit()}return true}
 // golpes que pueden romper cajas: zona rectangular delante del atleta
@@ -1800,6 +1800,11 @@ const TUT_STEPS=[
   {id:'hop', txt:'SALTA',need:1},
   {id:'akick',txt:'SALTA + PATADA',need:1,sub:'patada en el aire'},
   {id:'roll',txt:'ESQUIVA',need:1,sub:'eres invencible mientras ruedas'},
+  {id:'grab',txt:'AGARRA AL JUEZ',need:1,sub:'camina contra él'},
+  {id:'kas', txt:'¡KICK ASS!',need:1,sub:'patada en el culo mientras lo agarras'},
+  {id:'crate',txt:'ROMPE EL CAJÓN',need:1,sub:'golpéalo: dentro hay material'},
+  {id:'pick',txt:'COGE LA WALL BALL',need:1,sub:'pasa por encima'},
+  {id:'slam',txt:'ESTÁMPALA',need:1,sub:'tumba a todos los que pille'},
 ];
 const TUT_STEP_MAX=9; // si alguien se atasca, el paso se da por hecho solo
 let G_FORCE_TUT=false;
@@ -1807,22 +1812,31 @@ function tutWanted(){if(G_FORCE_TUT){G_FORCE_TUT=false;return true}const h=locat
   try{return !localStorage.getItem('nrb_tut')}catch(e){return false}}
 function tutStart(){G.tut={i:0,n:0,t:0,ok:0,done:false,endT:0,lastX:G.ath[0].x};G.hintT=99}
 function tutPadMode(){return app.classList.contains('touch')||(window.__padT&&performance.now()-window.__padT<60000)}
-function tutKey(id){const p=tutPadMode();return({atk:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
+function tutKey(id){const p=tutPadMode();return({atk:p?'X':'Z',kas:p?'X':'Z',crate:p?'X':'Z',slam:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
 const TUT_COL={X:'#5aa0ff',Y:'#ffd23f',A:'#3ddc84',B:'#ff4a5a'};
 function tutEv(a,id,v){const T=G.tut;if(!T||T.done||a!==G.ath[0])return;
   if(T.ok>0){const nx=TUT_STEPS[T.i+1];if(nx&&nx.id===id)T.pend=(T.pend||0)+(v||1);return} // lo que haga durante el «¡BIEN!» cuenta para el paso siguiente
   const s=TUT_STEPS[T.i];if(s.id!==id)return;T.n+=v||1;if(T.n>=s.need)tutOk()}
 function tutOk(){const T=G.tut;T.ok=.55;SFX.pick();const L=G.ath[0];ftext(L.x,L.y-92,'¡BIEN!','#3ddc84',13)}
-function tutEnd(skipped){const T=G.tut;if(!T||T.done)return;T.done=true;T.endT=1.6;G.hintT=99;try{localStorage.setItem('nrb_tut','1')}catch(e){}
+function tutEnd(skipped){const T=G.tut;if(!T||T.done)return;for(const e of G.en)if(e.tut){e.st='dying';e.t=0;e.vx=0}T.done=true;T.endT=1.6;G.hintT=99;try{localStorage.setItem('nrb_tut','1')}catch(e){}
   gcEv(skipped?'tutorial-omitido':'tutorial-completo',skipped?'Tutorial omitido':'Tutorial completo');bigMsg(skipped?'¡A POR ELLOS! →':'¡LISTOS! A POR LOS JUECES →',1.6);SFX.go()}
 function updTut(dt){const T=G.tut;if(!T)return;
   if(T.done){T.endT-=dt;if(T.endT<=0)G.tut=null;return}
   const L=G.ath[0];
   if(T.ok>0){T.ok-=dt;if(T.ok<=0){T.i++;T.n=T.pend||0;T.pend=0;T.t=0;T.lastX=L.x;if(T.i>=TUT_STEPS.length)tutEnd(false);else if(T.n>=TUT_STEPS[T.i].need)tutOk()}return}
-  T.t+=dt;const s=TUT_STEPS[T.i];
+  T.t+=dt;const s=TUT_STEPS[T.i];tutProps(s.id,L);
   if(s.id==='move'){T.n+=Math.abs(L.x-T.lastX)+Math.abs(L.y-(T.lastY==null?L.y:T.lastY))*.6;if(T.n>=s.need)tutOk()}
   T.lastX=L.x;T.lastY=L.y;
   if(T.t>TUT_STEP_MAX)tutOk();
+}
+// atrezo del entrenamiento: un juez de prácticas que no ataca y un cajón con una wall ball dentro
+function tutProps(id,L){const T=G.tut;
+  if(id==='grab'||id==='kas'){let e=G.en.find(e=>e.tut&&!e.dead&&e.st!=='dying');
+    if(!e&&!(id==='kas'&&L.st==='kick')){e=mkJudge('base',Math.min(L.x+110,430),clamp(L.y,FY0+8,FY1-6),G.cat);e.tut=true;e.face=-1;e.hp=e.maxHp=9999;G.en.push(e)}
+    if(e){e.cd=9;e.shout=0}}
+  if(id==='crate'&&!G.crates.some(c=>c.tut&&c.hp>0)&&!T.crateDone){G.crates.push({kind:'crate',x:Math.min(L.x+70,425),y:clamp(L.y,FY0+8,FY1-6),hp:3,f:0,bt:-1,shake:0,items:['wb'],tut:true})}
+  if(id==='pick'&&L.carry)tutOk();
+  if(id==='pick'&&!L.carry&&!G.pick.some(p=>p.type==='wb')&&!G.crates.some(c=>c.tut&&c.hp>0))G.pick.push({kind:'pick',type:'wb',x:Math.min(L.x+50,425),y:L.y,t:0,pz:0,pvz:0,pvx:0});
 }
 // mando o teclado: botón redondo con la letra; teclado: tecla rectangular
 function tutBtn(g,x,y,k){g.save();g.font="17px 'Bangers','Bungee',Impact,sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
@@ -1831,7 +1845,7 @@ function tutBtn(g,x,y,k){g.save();g.font="17px 'Bangers','Bungee',Impact,sans-se
   if(pad)g.arc(x,y,11,0,7);else{const r=5,l=x-w/2,t=y-11;g.moveTo(l+r,t);g.arcTo(l+w,t,l+w,t+22,r);g.arcTo(l+w,t+22,l,t+22,r);g.arcTo(l,t+22,l,t,r);g.arcTo(l,t,l+w,t,r)}
   g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=2;g.stroke();g.lineWidth=3;g.strokeStyle='#000';g.strokeText(k,x,y+1);g.fillStyle=col;g.fillText(k,x,y+1);g.restore();return w}
 function tutKeys(g,cx,y,id){ // dibuja una o varias teclas (A+Y) centradas
-  if(id==='move'){g.save();g.translate(cx,y);g.fillStyle='#20222b';g.strokeStyle='#000';g.lineWidth=4;g.beginPath();g.arc(0,0,12,0,7);g.fill();g.stroke();
+  if(id==='move'||id==='grab'||id==='pick'){g.save();g.translate(cx,y);g.fillStyle='#20222b';g.strokeStyle='#000';g.lineWidth=4;g.beginPath();g.arc(0,0,12,0,7);g.fill();g.stroke();
     g.fillStyle='#fff';for(const d of [0,1,2,3]){g.save();g.rotate(d*Math.PI/2);g.beginPath();g.moveTo(0,-10);g.lineTo(-3.5,-5.5);g.lineTo(3.5,-5.5);g.fill();g.restore()}g.restore();return}
   const ks=tutKey(id).split('+');g.save();g.font="17px 'Bangers','Bungee',Impact,sans-serif";
   const pad=tutPadMode(),ws=ks.map(k=>pad?22:Math.max(22,g.measureText(k).width+14)),tot=ws.reduce((a,b)=>a+b,0)+(ks.length-1)*16;g.restore();
