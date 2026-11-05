@@ -1348,7 +1348,7 @@ function bigMsg(s,t){G.bigMsg=s;G.bigT=t||1.4;G.bigT0=G.bigT}
 function photoCharge(v){if(!G.photog||G.photoFull)return;G.photo=Math.min(100,G.photo+v);if(G.photo>=100){G.photoFull=true;SFX.pick();bigMsg('¡FOTO LISTA! PULSA V',1.6)}}
 
 /* ----- combate ----- */
-const canHit=e=>!((e.z||0)>18&&!AIRHIT)&&e.st!=='dying'&&e.st!=='grabbed'&&e.st!=='kicked'&&e.st!=='kdown'&&e.st!=='down'&&e.st!=='stun'&&e.st!=='getup'&&e.inv<=0;
+const canHit=e=>e.st!=='roff'&&!((e.z||0)>18&&!AIRHIT)&&e.st!=='dying'&&e.st!=='grabbed'&&e.st!=='kicked'&&e.st!=='kdown'&&e.st!=='down'&&e.st!=='stun'&&e.st!=='getup'&&e.inv<=0;
 function nearestAth(e){const [a0,b0]=G.ath,up=x=>!ATH_DOWN.has(x.st);const a=up(a0)?a0:b0,b=up(b0)?b0:a0;return Math.abs(a.x-e.x)+Math.abs(a.y-e.y)*2<=Math.abs(b.x-e.x)+Math.abs(b.y-e.y)*2||b.st==='hurt'&&false?a:b}
 function attackers(){let n=0;for(const e of G.en)if(e.st==='windup'||e.st==='strike')n++;return n}
 function shout(e){if(JT[e.type]&&JT[e.type].mute)return;musicDuck(.45,900);e.shout=1.1;e.shoutTxt=e.type==='chief'?pick(['¡ÚLTIMOS DIEZ SEGUNDOS!','¡TRES, DOS, UNO!','¡QUE SUENE!','¡SUBE ESE VOLUMEN!']):SHOUTS[Math.floor(Math.random()*SHOUTS.length)]}
@@ -1620,7 +1620,7 @@ function updProj(dt){
 function spawnWave(w){
   const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):'base');
   list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
-    if(t==='rower'){e.x=G.cam+W+30;e.y=(FY0+FY1)/2;e.face=-1;e.cd=2;e.shCd=1.5}
+    if(t==='rower'){e.x=G.cam+W+100;e.y=rowerLane();e.face=-1;e.shCd=1.5;e.offT=1.5;e.sprint=false}
     if(t==='chief'){e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
     G.en.push(e)});
   G.lockX=G.cam;G.cleared=false;bigMsg(boss?'¡SPEAKER ENTRA EN PISTA!':list.includes('rower')?'¡LLEGA '+ROWER_NAME+'!':'¡NO REP A LA VISTA!',1.6);
@@ -1843,9 +1843,9 @@ function drawBossHUD(g){
    Ciclo: avanza → se prepara → EMBESTIDA → se pasa de largo y se queda vendido (de espaldas) → se gira. */
 const ROWER_NAME='EL ORGANIZADOR';
 const ROWER_IMG=(()=>{const i=new Image();i.src=ROWER.atlas;return i})();
-JT.rower={hp:220,spd:34,dmg:12,reach:0,wpn:'none',s:1,val:900,armor:true,nograb:true,mute:true};
+JT.rower={hp:160,spd:34,dmg:8,reach:0,wpn:'none',s:1,val:900,armor:true,nograb:true,mute:true};
 JPAL.rower=JPAL.base;
-const ROW_FRONT=[14,98];
+const ROW_FRONT=[14,98],ROW_WALK=95,ROW_SPRINT=250,ROW_DMG=8;
 const ROW_SHOUTS=['¡OJO QUE PASOOO!','¡CUIDAOOO!','¡APARTARSUS!'];
 function rowerShout(e){e.shoutTxt=ROW_SHOUTS[(e.shI=((e.shI==null?-1:e.shI)+1)%ROW_SHOUTS.length)];e.shout=1.5;musicDuck(.5,900)} // zona peligrosa delante de su cuerpo (x relativa)
 function rowerFrontHit(e,dmg,kb){
@@ -1853,26 +1853,25 @@ function rowerFrontHit(e,dmg,kb){
     if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(a.y-e.y)<16){hurtAth(a,dmg,e.face);if(a.st==='hurt'){a.vx=e.face*kb}G.shake=Math.max(G.shake,.25);SFX.hit()}}
   for(const j of G.en){if(j===e||!canHit(j)||j.type==='chief'||j.type==='rower')continue;const dx=(j.x-e.x)*e.face;
     if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(j.y-e.y)<16&&!(j.rowHitT>0)){j.rowHitT=.6;hurtE(j,18,e.face,true,260)}}}
-function updRower(e,dt){
-  const tg=nearestAth(e);if(!tg)return;e.vy=0;
+function rowerLane(){const up=G.ath.filter(a=>athUp(a));const a=up.length?up[Math.floor(Math.random()*up.length)]:G.ath[0];return clamp(a.y,FY0+6,FY1-4)}
+function updRower(e,dt){ // pasadas de lado a lado: no persigue, va cargado de material y hay que apartarse
   for(const j of G.en)if(j.rowHitT>0)j.rowHitT-=dt;
+  const L=G.cam-120,Rr=G.cam+W+120;
   switch(e.st){
-    case 'walk':{ // avanza hacia su objetivo; si lo tiene a la espalda, se gira despacio
-      if((e.t<dt*1.5&&!(G.bigT>0))||(e.shCd=(e.shCd||0)-dt)<=0){rowerShout(e);e.shCd=rr(3.5,5)} // al empezar a avanzar, y de vez en cuando
-      const dx=tg.x-e.x;if(dx*e.face<-30&&e.t>.8){e.st='rturn';e.t=0;break}
-      e.vx=e.face*e.spd;e.vy=Math.sign(tg.y-e.y)*Math.min(26,Math.abs(tg.y-e.y)*2);e.ph+=dt;
-      rowerFrontHit(e,e.dmg,140);
-      if(e.cd<=0&&dx*e.face>60&&dx*e.face<330&&Math.abs(tg.y-e.y)<26&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='rwind';e.t=0;e.vx=0;rowerShout(e);e.shCd=rr(3.5,5)}
+    case 'walk':{
+      if(e.t<dt*1.5&&!(G.bigT>0)){rowerShout(e);e.shCd=rr(3.5,5)}else if((e.shCd=(e.shCd||0)-dt)<=0){rowerShout(e);e.shCd=rr(3.5,5)}
+      e.vx=e.face*ROW_WALK;e.ph+=dt;rowerFrontHit(e,ROW_DMG,140);
+      if(e.sprint&&(e.face>0?e.x>G.cam+60:e.x<G.cam+W-60)){e.st='rwind';e.t=0;e.vx=0;rowerShout(e);e.shCd=rr(3.5,5)}
+      if(e.face>0?e.x>Rr:e.x<L){e.st='roff';e.t=0;e.vx=0}
     }break;
-    case 'rwind':e.vx=0;e.vy=Math.sign(tg.y-e.y)*Math.min(30,Math.abs(tg.y-e.y)*3);if(e.t>=.95){e.st='rcharge';e.t=0;e.chX=e.x;SFX.roll()}break;
-    case 'rcharge':{e.vx=e.face*265;e.ph+=dt*2;rowerFrontHit(e,e.dmg*1.6,300);
-      const edge=e.face>0?e.x>G.cam+W-30:e.x<G.cam+30;if(e.t>=1.6||edge||(Math.abs(e.x-e.chX)>420)){e.st='rtired';e.t=0;e.vx=e.face*60;G.shake=Math.max(G.shake,.2);SFX.boom()}}break;
-    case 'rtired':e.vx*=Math.pow(.05,dt);if(e.t>=1.7){e.st='rturn';e.t=0}break; // vendido: ¡a por su espalda!
-    case 'rturn':e.vx=0;if(e.t>=.45){e.face=tg.x>e.x?1:-1;e.st='walk';e.t=0;e.cd=rr(1.4,2.6)}break;
+    case 'rwind':e.vx=0;if(e.t>=.9){e.st='rcharge';e.t=0;SFX.roll()}break;
+    case 'rcharge':e.vx=e.face*ROW_SPRINT;e.ph+=dt*2;rowerFrontHit(e,ROW_DMG*1.6,280);if(e.face>0?e.x>Rr:e.x<L){e.st='roff';e.t=0;e.vx=0}break;
+    case 'roff':e.vx=0;if(e.t>=e.offT){ // vuelve a salir por el mismo lado por el que se ha ido
+      e.face=-e.face;e.x=e.face>0?G.cam-100:G.cam+W+100;e.y=rowerLane();e.sprint=Math.random()<.35;e.st='walk';e.t=0;e.offT=rr(1,2)}break;
     case 'dying':e.vx*=Math.pow(.1,dt);if(e.t>=2.6)e.dead=true;break;
     default:e.st='walk';e.t=0;
   }
-  e.x=clamp(e.x+e.vx*dt,G.cam+20,G.cam+W-20);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
+  e.vy=0;e.x+=e.vx*dt;
 }
 // golpes: si vienen de delante, choca con la máquina
 function rowerBlock(e,dir){return e.type==='rower'&&e.st!=='dying'&&dir!==e.face}
@@ -1881,12 +1880,10 @@ function rowerFrame(e){const F=ROWER.fr,t=e.t||0;
   switch(e.st){
     case 'rwind':return['wind',Math.min(11,Math.floor(t/.95*12))];
     case 'rcharge':return['charge',Math.floor((e.ph||0)*20)%16];
-    case 'rtired':return['wind',t<.3?12:t<1.2?(Math.floor(t*6)%2?6:7):3];
-    case 'rturn':return['walk',0];
     case 'dying':return['fall',Math.min(15,Math.floor(t/1.3*16))];
     default:return['walk',Math.floor((e.ph||0)*11)%16]}}
 function drawRower(g,e){
-  if(!ROWER_IMG.complete||!ROWER_IMG.naturalWidth)return;
+  if(!ROWER_IMG.complete||!ROWER_IMG.naturalWidth||e.st==='roff')return;
   if(e.st==='dying'&&e.t>2&&Math.floor(e.t*14)%2)return;
   const[sq,i]=rowerFrame(e),f=ROWER.fr[sq][i],u=ROWER.u,face=e.face||1;
   g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.ellipse(Math.round(e.x+face*40),Math.round(e.y),62,7,0,0,7);g.fill();
@@ -1894,7 +1891,6 @@ function drawRower(g,e){
   if(e.flash>0){g.filter='brightness(1.8)'}
   g.drawImage(ROWER_IMG,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore();
   if(e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),face,e.shout);
-  if(e.st==='rtired'){const a=.5+.5*Math.sin(G.run*10);g.globalAlpha=a;T(g,'¡POR DETRÁS!',e.x-face*24,e.y-120,F_D(12),'#ffd23f','center','#04101a');g.globalAlpha=1}
 }
 /* ===== CAJONES DE SALTO: los extras (batido +28 salud / wall ball) solo salen de aquí =====
    Se rompen con cualquier golpe (barra, mancuerna, wall ball, wall ball devuelta): 3 toques; el golpe fuerte del combo y la wall ball cuentan doble. */
