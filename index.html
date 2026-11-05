@@ -946,7 +946,7 @@ function renderRank(ol,meKey){
     const tn=document.createElement('div');tn.className='tn';const s=document.createElement('span');s.textContent=String(r.team||'-');const sm=document.createElement('small');sm.textContent=(PAIRN[r.pair]||'')+' · '+(r.cat||'')+(r.done?' · ✓ reto':' · sin terminar')+' · '+fmtT(r.time||0)+' · '+(r.noRep|0)+' NO REP';tn.append(s,sm);
     const em=document.createElement('em');em.textContent=fmtN(r.score||0);li.append(b,tn,em);ol.appendChild(li)});
 }
-function chipUpdate(){[$('#rkChip'),$('#rkChip2')].forEach(c=>{c.className='chip'+(RK.mode==='shared'?' ok':RK.mode==='local'?' loc':'');c.textContent=RK.mode==='shared'?'Compartido':RK.mode==='local'?'Solo este navegador':'Cargando'})}
+function chipUpdate(){[$('#rkChip'),$('#rkChip2')].forEach(c=>{c.className='chip'+(RK.mode==='shared'?' ok':RK.mode==='local'?' loc':'');c.textContent=RK.mode==='shared'?'General':RK.mode==='local'?'Solo este navegador':'Cargando'})}
 function refreshRank(){chipUpdate();renderRank($('#rkMenu'),null);renderRank($('#rkRes'),G&&G.rkKey)}
 async function initRanking(){
   try{
@@ -2401,6 +2401,37 @@ function instShow(){
   instSync();
   if(/[?&]instalar\b/.test(location.search)&&!instStandalone())setTimeout(instShow,900);
 })();
+/* ===== RANKING GENERAL (Firebase Firestore, por su API REST: sin librerías) =====
+   Rellena projectId y apiKey con los datos de tu proyecto de Firebase. Vacío = ranking solo en este navegador. */
+const RANK_FB={projectId:'',apiKey:''};
+const FB_ON=()=>!!(RANK_FB.projectId&&RANK_FB.apiKey);
+const fbURL=p=>'https://firestore.googleapis.com/v1/projects/'+RANK_FB.projectId+'/databases/(default)/documents'+p+(p.includes('?')?'&':'?')+'key='+RANK_FB.apiKey;
+function fbVal(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return +v.integerValue;if('doubleValue' in v)return +v.doubleValue;if('booleanValue' in v)return v.booleanValue;return null}
+async function fbLoad(){
+  const body={structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:200}};
+  const r=await fetch(fbURL(':runQuery'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status);
+  const a=await r.json(),rows=[];
+  for(const x of a){const d=x.document;if(!d)continue;const f=d.fields||{},g=k=>fbVal(f[k]);
+    rows.push({key:d.name.split('/').pop(),team:String(g('team')||''),pair:g('pair'),cat:g('cat'),score:+g('score')||0,time:+g('time')||0,noRep:+g('noRep')||0,done:!!g('done'),at:+g('at')||0})}
+  // una línea por equipo + pareja + categoría: su mejor marca
+  const best=new Map();for(const r of rows){const k=(r.team.trim().toLowerCase())+'|'+r.pair+'|'+r.cat;const o=best.get(k);if(!o||cmpRec(r,o)<0)best.set(k,r)}
+  return [...best.values()]}
+async function fbSave(rec){
+  const F={team:{stringValue:String(rec.team).slice(0,24)},pair:{stringValue:String(rec.pair)},cat:{stringValue:String(rec.cat)},score:{integerValue:String(Math.max(0,Math.round(rec.score)))},
+    time:{doubleValue:Math.round((rec.time||0)*10)/10},noRep:{integerValue:String(rec.noRep|0)},done:{booleanValue:!!rec.done},at:{integerValue:String(Date.now())}};
+  const r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});if(!r.ok)throw new Error('fb '+r.status);
+  const d=await r.json();return d.name.split('/').pop()}
+let fbTimer=null;
+async function fbRefresh(){try{RK.rows=await fbLoad();RK.mode='shared'}catch(e){if(RK.mode!=='shared')RK.mode='local'}refreshRank()}
+{const _init=initRanking,_sub=submitScore;
+  initRanking=async function(){if(!FB_ON())return _init();RK.mode='loading';refreshRank();await fbRefresh();
+    if(!fbTimer)fbTimer=setInterval(()=>{if(mode==='menu'||mode==='results')fbRefresh()},30000)};
+  submitScore=async function(rec){if(!FB_ON())return _sub(rec);const msg=$('#rSave');
+    try{const id=await fbSave(rec);G.rkKey=id;msg.textContent='Guardado en el ranking general.';await fbRefresh();
+      if(!RK.rows.some(r=>r.key===id))msg.textContent='Guardado en el ranking general (tu mejor marca de este equipo sigue siendo más alta).'}
+    catch(e){saveLocal(Object.assign({key:'loc'+rec.at},rec));G.rkKey='loc'+rec.at;msg.textContent='Sin conexión con el ranking general: se guardó solo en este móvil.';refreshRank()}};
+  // al abrir el ranking del menú, refrescar
+  const _mg=menuGo;menuGo=function(p){_mg(p);if(p==='rank'&&FB_ON())fbRefresh()}}
 /* ===== COOPERATIVO ONLINE ENTRE DOS MÓVILES =====
    El que crea la sala (anfitrión) simula la partida entera; el que se une (invitado) le manda sus botones
    y recibe ~20 veces por segundo el estado para dibujarlo (y los sonidos que suenan).
