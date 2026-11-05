@@ -1414,7 +1414,7 @@ function updBuy(a,dt){
 function startGrab(a,e){tutEv(a,'grab');if(e.tut)e.hp=1;a.st='grab';a.t=0;a.tgt=e;a.face=e.x>a.x?1:-1;e.st='grabbed';e.t=0;e.vx=e.vy=0;e.face=a.face;e.grabber=a;e.shout=0;SFX.click();G.grabHint=1.5}
 function updGrab(a,inp,dt){const e=a.tgt;if(!e||e.st!=='grabbed'){a.st='idle';return}
   const k=Math.min(1,dt*14);e.x+=(a.x+a.face*27-e.x)*k;e.y+=(a.y-1-e.y)*k;e.face=a.face;
-  if(inp.z&&a.t>.12){tutEv(a,'kas');a.st='kick';a.t=0;a.hit=false;return}
+  if((inp.z||inp.k)&&a.t>.12){tutEv(a,'kas');a.st='kick';a.t=0;a.hit=false;return}
   if(a.t>=1.6){e.st='hurt';e.t=0;e.vx=a.face*120;a.st='idle';a.tgt=null}}
 function updKick(a,dt){const e=a.tgt;
   if(!a.hit&&a.t>=.08&&e){a.hit=true;smpPlay('kick_'+((a.pal&&a.pal.spr)||''),1);
@@ -1609,7 +1609,7 @@ function updStreet(dt){
   const inL=G.net&&lead.netGuest?netGInp():inp;
   updAth(lead,inL,dt);
   updAth(part,athUp(part)&&part.st!=='help'&&!(G.tut&&!G.tut.done)?(G.net?(part.netGuest?netGInp():inp):partnerInput(part,lead,dt)):{ax:0,ay:0},dt);
-  updRescue(dt);updTut(dt);if(G.tut&&!G.tut.done)lead.x=Math.min(lead.x,440);
+  updRescue(dt);updTut(dt);
   if(G.photog)updPhotog(G.photog,lead,dt);
   for(const a of G.ath){a.x=clamp(a.x,Math.max(14,G.cam+16),Math.min(LEVEL_W-16,G.cam+W-16))}
   for(const e of G.en)updJudge(e,dt);
@@ -1830,8 +1830,8 @@ const TUT_STEPS=[
   {id:'hop', txt:'SALTA',need:1},
   {id:'akick',txt:'SALTA + PATADA',need:1,sub:'patada en el aire'},
   {id:'roll',txt:'ESQUIVA',need:1,sub:'eres invencible mientras ruedas'},
-  {id:'grab',txt:'AGARRA AL JUEZ',need:1,sub:'camina contra él'},
-  {id:'kas', txt:'¡KICK ASS!',need:1,sub:'patada en el culo mientras lo agarras'},
+  {id:'grab',txt:'ACÉRCATE Y AGARRA AL JUEZ',need:1,sub:'camina hacia él hasta chocar: lo agarras solo'},
+  {id:'kas', txt:'¡KICK ASS!',need:1,sub:'con él agarrado, pulsa PATADA'},
   {id:'crate',txt:'ROMPE EL CAJÓN',need:1,sub:'golpéalo: dentro hay material'},
   {id:'pick',txt:'COGE LA WALL BALL',need:1,sub:'pasa por encima'},
   {id:'slam',txt:'ESTÁMPALA',need:1,sub:'tumba a todos los que pille'},
@@ -1843,7 +1843,7 @@ function tutWanted(){if(NET.on)return false;if(G_FORCE_TUT){G_FORCE_TUT=false;re
   try{return !localStorage.getItem('nrb_tut')}catch(e){return false}}
 function tutStart(){G.tut={steps:TUT_STEPS.filter(s=>s.id!=='foto'||G.photog),i:0,n:0,t:0,ok:0,done:false,endT:0,lastX:G.ath[0].x};G.hintT=99}
 function tutPadMode(){return app.classList.contains('touch')||(window.__padT&&performance.now()-window.__padT<60000)}
-function tutKey(id){const p=tutPadMode();return({foto:p?'L1':'V',atk:p?'X':'Z',kas:p?'X':'Z',crate:p?'X':'Z',slam:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
+function tutKey(id){const p=tutPadMode();return({foto:p?'L1':'V',atk:p?'X':'Z',kas:p?'Y':'X',crate:p?'X':'Z',slam:p?'X':'Z',kick:p?'Y':'X',hop:p?'A':'C',akick:p?'A+Y':'C+X',roll:p?'B':'ESP',skip:p?'R1':'Q'})[id]||''}
 const TUT_COL_=0;const TUT_COL={X:'#5aa0ff',Y:'#ffd23f',A:'#3ddc84',B:'#ff4a5a'};
 function tutEv(a,id,v){const T=G.tut;if(!T||T.done||a!==G.ath[0])return;
   if(T.ok>0){const nx=T.steps[T.i+1];if(nx&&nx.id===id)T.pend=(T.pend||0)+(v||1);return} // lo que haga durante el «¡BIEN!» cuenta para el paso siguiente
@@ -1860,19 +1860,21 @@ function updTut(dt){const T=G.tut;if(!T)return;
   T.lastX=L.x;T.lastY=L.y;
   if(T.t>TUT_STEP_MAX){if(s.id==='foto'){if(G.mode2!=='photo'&&L.st!=='pose'){G.photo=100;startPhoto()}}else tutOk()}
 }
+// coloca algo a una distancia del jugador, dentro de la pantalla (delante si cabe, si no detrás)
+function tutSideX(L,d){const lo=G.cam+30,hi=G.cam+W-30;return L.x+d<=hi?L.x+d:Math.max(lo,L.x-d)}
 // atrezo del entrenamiento: un juez de prácticas que no ataca y un cajón con una wall ball dentro
 function tutProps(id,L){const T=G.tut;
   if(id==='grab'||id==='kas'){let e=G.en.find(e=>e.tut&&!e.dead&&e.st!=='dying');
-    if(!e&&!(id==='kas'&&L.st==='kick')){e=mkJudge('base',Math.min(L.x+110,430),clamp(L.y,FY0+8,FY1-6),G.cat);e.tut=true;e.face=-1;e.hp=e.maxHp=9999;G.en.push(e)}
+    if(!e&&!(id==='kas'&&L.st==='kick')){e=mkJudge('base',tutSideX(L,170),clamp(L.y,FY0+8,FY1-6),G.cat);e.tut=true;e.face=-1;e.hp=e.maxHp=9999;G.en.push(e)}
     if(e){e.cd=9;e.shout=0}}
-  if(id==='crate'&&!G.crates.some(c=>c.tut&&c.hp>0)&&!T.crateDone){G.crates.push({kind:'crate',x:Math.min(L.x+70,425),y:clamp(L.y,FY0+8,FY1-6),hp:3,f:0,bt:-1,shake:0,items:['wb'],tut:true})}
+  if(id==='crate'&&!G.crates.some(c=>c.tut&&c.hp>0)&&!T.crateDone){G.crates.push({kind:'crate',x:tutSideX(L,80),y:clamp(L.y,FY0+8,FY1-6),hp:3,f:0,bt:-1,shake:0,items:['wb'],tut:true})}
   if(id==='pick'&&L.carry)tutOk();
   if(id==='foto'&&!T.crowd){T.crowd=true;G.photo=100;G.photoFull=true;const types=['base','flag','brute','acm','acf'];
     for(let k=0;k<20;k++){const left=k%2===0,dx=40+Math.floor(k/2)*26+Math.random()*12,x=clamp(L.x+(left?-dx:dx),G.cam+18,G.cam+W-18);
       const e=mkJudge(types[k%types.length],x,FY0+8+((k*37)%(FY1-FY0-16)),G.cat);e.tut=true;e.val=0;e.face=x<L.x?1:-1;e.cd=9;G.en.push(e)}
     bigMsg('¡TE RODEAN!',1.3)}
   if(id==='foto')for(const e of G.en)if(e.tut)e.cd=9;
-  if(id==='pick'&&!L.carry&&!G.pick.some(p=>p.type==='wb')&&!G.crates.some(c=>c.tut&&c.hp>0))G.pick.push({kind:'pick',type:'wb',x:Math.min(L.x+50,425),y:L.y,t:0,pz:0,pvz:0,pvx:0});
+  if(id==='pick'&&!L.carry&&!G.pick.some(p=>p.type==='wb')&&!G.crates.some(c=>c.tut&&c.hp>0))G.pick.push({kind:'pick',type:'wb',x:tutSideX(L,60),y:L.y,t:0,pz:0,pvz:0,pvx:0});
 }
 // mando o teclado: botón redondo con la letra; teclado: tecla rectangular
 function tutBtn(g,x,y,k){g.save();g.font="17px 'Bangers','Bungee',Impact,sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
@@ -1887,11 +1889,11 @@ function tutKeys(g,cx,y,id){ // dibuja una o varias teclas (A+Y) centradas
   const pad=tutPadMode(),ws=ks.map(k=>pad?22:Math.max(22,g.measureText(k).width+14)),tot=ws.reduce((a,b)=>a+b,0)+(ks.length-1)*16;g.restore();
   let x=cx-tot/2;ks.forEach((k,i)=>{tutBtn(g,x+ws[i]/2,y,k);x+=ws[i];if(i<ks.length-1){T(g,'+',x+8,y+5,F_D(14),'#fff','center','#04101a');x+=16}})}
 function drawTut(g){const Q=G.tut;if(!Q||Q.done)return;
-  const s=Q.steps[Math.min(Q.i,Q.steps.length-1)],cx=Math.round(W/2),y=92,w=250,h=s.sub?70:56,ok=Q.ok>0;
+  const s=Q.steps[Math.min(Q.i,Q.steps.length-1)],cx=Math.round(W/2),y=92,tw=(g.save(),g.font="19px 'Bangers','Bungee',Impact,sans-serif",g.measureText(s.txt).width),_r=g.restore(),sw=s.sub?(g.save(),g.font=F_U(9),g.measureText(s.sub).width):0,_r2=s.sub?g.restore():0,w=Math.min(W-16,Math.max(250,tw+80,sw+30)),h=s.sub?70:56,ok=Q.ok>0;
   g.save();g.globalAlpha=.88;R(g,cx-w/2,y-20,w,h,'rgba(4,14,26,.82)');g.globalAlpha=1;g.strokeStyle=ok?'#3ddc84':'#ffd23f';g.lineWidth=2;g.strokeRect(cx-w/2+.5,y-19.5,w-1,h-1);g.restore();
   T(g,'ENTRENAMIENTO '+(Math.min(Q.i,Q.steps.length-1)+1)+'/'+Q.steps.length,cx,y-7,F_U(9),'#08C5C1','center');
   // tecla(s) a la izquierda del texto
-  g.save();g.font="19px 'Bangers','Bungee',Impact,sans-serif";const tw=g.measureText(s.txt).width;g.restore();
+
   const kw=s.id==='akick'?(tutPadMode()?60:70):s.id==='roll'&&!tutPadMode()?40:26,tot=kw+8+tw,x0=cx-tot/2;
   tutKeys(g,x0+kw/2,y+14,s.id);
   g.save();g.font="19px 'Bangers','Bungee',Impact,sans-serif";g.textBaseline='middle';g.textAlign='left';g.lineJoin='round';
@@ -1966,7 +1968,7 @@ function drawEntity(g,e){
     {const L=G.ath[0];if(L!==e){const near=Math.abs(L.x-e.x)<46&&Math.abs(L.y-e.y)<20;drawBtnPrompt(g,x,y-62,near?'¡LEVÁNTALO!'.replace('LO!',isFemAth(e)?'LA!':'LO!'):'ACÉRCATE Y PULSA')}}}
   if(e.kind==='ath'&&e===G.swapA&&e.st==='hifive'&&e.t>.38){const a=clamp((.95-e.t)*5,0,1),pop=1+Math.max(0,.5-e.t)*2.5,mx=Math.round((e.x+G.swapB.x)/2);if(!drawTxt(g,'t_igo',mx,Math.round(e.y-118),30,a,pop))drawBubble(g,'¡I GO, YOU GO!',mx,Math.round(e.y-100-e.z),e.face,1.25-(e.t-.3))}
   if(e.kind==='ath'&&e===G.tocaE&&G.tocaT>0){G.tocaT-=1/60;drawTxt(g,'t_tetoca',Math.round(e.x),Math.round(e.y-(e._top!=null?e.y-e._top:80)-30-(1.1-G.tocaT)*14),18,clamp(G.tocaT*2.5,0,1))}
-  if(e.kind==='ath'&&e.lead&&e.st==='grab'){const a=.6+.4*Math.sin(G.run*10);g.globalAlpha=a;T(g,app.classList.contains('touch')?'BARRA = ¡KICK ASS!':'Z = ¡KICK ASS!',Math.round(e.x+e.face*20),Math.round(e.y-104),F_D(11),'#ff2bd6','center','#14060f');g.globalAlpha=1}
+  if(e.kind==='ath'&&e.lead&&e.st==='grab'){const a=.6+.4*Math.sin(G.run*10);g.globalAlpha=a;T(g,(app.classList.contains('touch')||tutPadMode())?'Y = ¡KICK ASS!':'X = ¡KICK ASS!',Math.round(e.x+e.face*20),Math.round(e.y-104),F_D(11),'#ff2bd6','center','#14060f');g.globalAlpha=1}
   if(e.kind==='ath'&&e.lead){const y=Math.round((e._top!=null?Math.min(e._top,e.y-72):e.y-72)-14+Math.sin(G.run*6)*1.5);g.fillStyle='#ffd23f';g.fillRect(Math.round(e.x)-4,y,8,2);g.fillRect(Math.round(e.x)-3,y+2,6,2);g.fillRect(Math.round(e.x)-2,y+4,4,2);g.fillRect(Math.round(e.x)-1,y+6,2,2)}
 }
 function drawProj(g,p){
