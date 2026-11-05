@@ -1620,7 +1620,7 @@ function updProj(dt){
 function spawnWave(w){
   const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):'base');
   list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
-    if(t==='rower'){e.x=G.cam+W+30;e.y=(FY0+FY1)/2;e.face=-1;e.cd=2}
+    if(t==='rower'){e.x=G.cam+W+30;e.y=(FY0+FY1)/2;e.face=-1;e.cd=2;e.shCd=1.5}
     if(t==='chief'){e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
     G.en.push(e)});
   G.lockX=G.cam;G.cleared=false;bigMsg(boss?'¡SPEAKER ENTRA EN PISTA!':list.includes('rower')?'¡LLEGA '+ROWER_NAME+'!':'¡NO REP A LA VISTA!',1.6);
@@ -1845,7 +1845,9 @@ const ROWER_NAME='EL ORGANIZADOR';
 const ROWER_IMG=(()=>{const i=new Image();i.src=ROWER.atlas;return i})();
 JT.rower={hp:220,spd:34,dmg:12,reach:0,wpn:'none',s:1,val:900,armor:true,nograb:true,mute:true};
 JPAL.rower=JPAL.base;
-const ROW_FRONT=[14,98]; // zona peligrosa delante de su cuerpo (x relativa)
+const ROW_FRONT=[14,98];
+const ROW_SHOUTS=['¡OJO QUE PASOOO!','¡CUIDAOOO!','¡APARTARSUS!'];
+function rowerShout(e){e.shoutTxt=ROW_SHOUTS[(e.shI=((e.shI==null?-1:e.shI)+1)%ROW_SHOUTS.length)];e.shout=1.5;musicDuck(.5,900)} // zona peligrosa delante de su cuerpo (x relativa)
 function rowerFrontHit(e,dmg,kb){
   for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>24)continue;const dx=(a.x-e.x)*e.face;
     if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(a.y-e.y)<16){hurtAth(a,dmg,e.face);if(a.st==='hurt'){a.vx=e.face*kb}G.shake=Math.max(G.shake,.25);SFX.hit()}}
@@ -1856,10 +1858,11 @@ function updRower(e,dt){
   for(const j of G.en)if(j.rowHitT>0)j.rowHitT-=dt;
   switch(e.st){
     case 'walk':{ // avanza hacia su objetivo; si lo tiene a la espalda, se gira despacio
+      if((e.t<dt*1.5&&!(G.bigT>0))||(e.shCd=(e.shCd||0)-dt)<=0){rowerShout(e);e.shCd=rr(3.5,5)} // al empezar a avanzar, y de vez en cuando
       const dx=tg.x-e.x;if(dx*e.face<-30&&e.t>.8){e.st='rturn';e.t=0;break}
       e.vx=e.face*e.spd;e.vy=Math.sign(tg.y-e.y)*Math.min(26,Math.abs(tg.y-e.y)*2);e.ph+=dt;
       rowerFrontHit(e,e.dmg,140);
-      if(e.cd<=0&&dx*e.face>60&&dx*e.face<330&&Math.abs(tg.y-e.y)<26&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='rwind';e.t=0;e.vx=0;bigMsg('¡CUIDADO CON EL REMO!',1)}
+      if(e.cd<=0&&dx*e.face>60&&dx*e.face<330&&Math.abs(tg.y-e.y)<26&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='rwind';e.t=0;e.vx=0;rowerShout(e);e.shCd=rr(3.5,5)}
     }break;
     case 'rwind':e.vx=0;e.vy=Math.sign(tg.y-e.y)*Math.min(30,Math.abs(tg.y-e.y)*3);if(e.t>=.95){e.st='rcharge';e.t=0;e.chX=e.x;SFX.roll()}break;
     case 'rcharge':{e.vx=e.face*265;e.ph+=dt*2;rowerFrontHit(e,e.dmg*1.6,300);
@@ -1890,6 +1893,7 @@ function drawRower(g,e){
   g.save();g.translate(Math.round(e.x+(e.flash>0?(Math.random()-.5)*4:0)),Math.round(e.y));g.scale(face,1);
   if(e.flash>0){g.filter='brightness(1.8)'}
   g.drawImage(ROWER_IMG,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore();
+  if(e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),face,e.shout);
   if(e.st==='rtired'){const a=.5+.5*Math.sin(G.run*10);g.globalAlpha=a;T(g,'¡POR DETRÁS!',e.x-face*24,e.y-120,F_D(12),'#ffd23f','center','#04101a');g.globalAlpha=1}
 }
 /* ===== CAJONES DE SALTO: los extras (batido +28 salud / wall ball) solo salen de aquí =====
