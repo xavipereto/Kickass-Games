@@ -2403,7 +2403,7 @@ function instShow(){
 })();
 /* ===== RANKING GENERAL (Firebase Firestore, por su API REST: sin librerías) =====
    Rellena projectId y apiKey con los datos de tu proyecto de Firebase. Vacío = ranking solo en este navegador. */
-const RANK_FB={projectId:'',apiKey:''};
+const RANK_FB={projectId:'kickass-games',apiKey:'AIzaSyCUilbLmxWSFh07cgiHTBDYdrdGqSn5phc'};
 const FB_ON=()=>!!(RANK_FB.projectId&&RANK_FB.apiKey);
 const fbURL=p=>'https://firestore.googleapis.com/v1/projects/'+RANK_FB.projectId+'/databases/(default)/documents'+p+(p.includes('?')?'&':'?')+'key='+RANK_FB.apiKey;
 function fbVal(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return +v.integerValue;if('doubleValue' in v)return +v.doubleValue;if('booleanValue' in v)return v.booleanValue;return null}
