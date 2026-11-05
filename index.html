@@ -61,6 +61,8 @@ button,input{font:inherit;color:inherit}
 .pb.mid i{display:block;width:26px;height:12px;border:2px solid currentColor;border-radius:2px}
 .pb.mid b{display:block;width:0;height:0;border-left:20px solid currentColor;border-top:7px solid transparent;border-bottom:7px solid transparent}
 #stick{position:relative;width:170px;height:170px;touch-action:none}
+#stick.live{opacity:1!important;transition:none}#stick{transition:transform .12s}
+.touch #pad{touch-action:none}#app.touch.playing,#app.touch.playing canvas{touch-action:none}.touch #pad .pb.f{pointer-events:none}
 #stick::before{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid #8a8d98;background:radial-gradient(circle,#2b2e38d9 0%,#16181fd9 70%)}
 #knob{position:absolute;width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#5d616e,#2a2d36);border:3px solid #a3a7b2;left:50%;top:50%;margin:-38px 0 0 -38px;pointer-events:none;box-shadow:0 4px 10px #0008}
 .nophoto .l1{visibility:hidden}
@@ -726,14 +728,39 @@ let stickId=null,stickDig={l:0,r:0,u:0,d:0};
 function stickDigital(x,y){ // flancos digitales para el WOD (handstand) y menús
   const set=(k,on,name)=>{if(on&&!stickDig[k]){edge[name]=true}stickDig[k]=on};
   set('l',x<-.55,'left');set('r',x>.55,'right');set('u',y<-.55,'up');set('d',y>.55,'down')}
-function stickMove(e){const r=stickEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,R=r.width*.36;let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy);if(d>R){dx*=R/d;dy*=R/d}
-  knob.style.transform='translate('+dx+'px,'+dy+'px)';
-  const dz=.18,m=Math.min(1,d/R),k=m<dz?0:(m-dz)/(1-dz),a=Math.atan2(dy,dx);stick.x=k?Math.cos(a)*k:0;stick.y=k?Math.sin(a)*k:0;stickDigital(stick.x,stick.y)}
-stickEl.addEventListener('pointerdown',e=>{audio();stickId=e.pointerId;try{stickEl.setPointerCapture(e.pointerId)}catch(_){}stickMove(e);e.preventDefault()});
-stickEl.addEventListener('pointermove',e=>{if(e.pointerId===stickId)stickMove(e)});
-const stickEnd=e=>{if(e.pointerId!==stickId)return;stickId=null;stick.x=stick.y=0;stickDigital(0,0);knob.style.transform=''};
-stickEl.addEventListener('pointerup',stickEnd);stickEl.addEventListener('pointercancel',stickEnd);
-document.querySelectorAll('#pad .pb').forEach(b=>{
+/* ===== CONTROLES TÁCTILES PERMISIVOS =====
+   Joystick flotante: se toca en cualquier punto de la mitad izquierda y ahí nace el joystick; si el dedo se va lejos, el centro le sigue.
+   Botones X/Y/A/B: cuenta el más cercano al dedo (con margen), y deslizando el dedo se puede pasar de uno a otro. */
+let stickO=null; // centro del joystick (en pantalla)
+function stickRest(){stickEl.style.transform='';const r=stickEl.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,R:r.width*.36}}
+function stickAt(x,y){const b=stickRest();stickO={x,y,R:b.R};stickEl.style.transform='translate('+(x-b.x)+'px,'+(y-b.y)+'px)';stickEl.classList.add('live')}
+function stickMove(e){if(!stickO)return;const R=stickO.R;let dx=e.clientX-stickO.x,dy=e.clientY-stickO.y,d=Math.hypot(dx,dy);
+  if(d>R*1.7){const k=(d-R*1.7)/d;stickO.x+=dx*k;stickO.y+=dy*k;const b=stickRest();stickEl.style.transform='translate('+(stickO.x-b.x)+'px,'+(stickO.y-b.y)+'px)';dx=e.clientX-stickO.x;dy=e.clientY-stickO.y;d=Math.hypot(dx,dy)}
+  const kx=d>R?R/d:1;knob.style.transform='translate('+dx*kx+'px,'+dy*kx+'px)';
+  const dz=.14,m=Math.min(1,d/(R*.85)),k=m<dz?0:Math.min(1,(m-dz)/(1-dz)*1.15);let a=Math.atan2(dy,dx);
+  // imán suave hacia las 8 direcciones (más fácil ir recto o en diagonal exacta)
+  const s8=Math.round(a/(Math.PI/4))*(Math.PI/4);if(Math.abs(a-s8)<.2)a=s8;
+  stick.x=k?Math.cos(a)*k:0;stick.y=k?Math.sin(a)*k:0;if(Math.abs(stick.x)<.08)stick.x=0;if(Math.abs(stick.y)<.08)stick.y=0;stickDigital(stick.x,stick.y)}
+const stickEnd=e=>{if(e.pointerId!==stickId)return;stickId=null;stickO=null;stick.x=stick.y=0;stickDigital(0,0);knob.style.transform='';stickEl.style.transform='';stickEl.classList.remove('live')};
+const FACE=[...document.querySelectorAll('#pad .pb.f')];const faceOwn=new Map(); // pointerId → botón pulsado
+function faceNear(x,y){let best=null,bd=1e9;for(const b of FACE){const r=b.getBoundingClientRect();if(!r.width)continue;const d=Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2))/(r.width/2);if(d<bd){bd=d;best=b}}return bd<2.4?best:null}
+function facePress(b){b.classList.add('on');pressK(b.dataset.k);if(navigator.vibrate)try{navigator.vibrate(8)}catch(_){}}
+function faceRelease(b){b.classList.remove('on');let still=false;for(const v of faceOwn.values())if(v===b)still=true;if(!still)releaseK(b.dataset.k)}
+function touchPlay(){return app.classList.contains('touch')&&mode==='play'}
+document.addEventListener('pointerdown',e=>{
+  if(!touchPlay()||e.pointerType==='mouse')return;const t=e.target;if(t.closest&&(t.closest('.overlay,#topbtns,input,a')||(t.closest('button')&&!t.closest('.pb.f'))))return;
+  audio();const leftSide=e.clientX<window.innerWidth*.48;
+  if(leftSide&&stickId==null){stickId=e.pointerId;stickAt(e.clientX,e.clientY);stickMove(e);e.preventDefault();return}
+  if(!leftSide){const b=faceNear(e.clientX,e.clientY);if(b){faceOwn.set(e.pointerId,b);facePress(b);e.preventDefault()}}
+},{passive:false});
+document.addEventListener('pointermove',e=>{
+  if(e.pointerId===stickId){stickMove(e);return}
+  const cur=faceOwn.get(e.pointerId);if(!cur)return;const b=faceNear(e.clientX,e.clientY); // deslizar de un botón a otro
+  if(b&&b!==cur){const r=b.getBoundingClientRect();if(Math.hypot(e.clientX-(r.left+r.width/2),e.clientY-(r.top+r.height/2))<r.width*.55){faceOwn.set(e.pointerId,b);faceRelease(cur);facePress(b)}}
+},{passive:true});
+const faceEnd=e=>{stickEnd(e);const b=faceOwn.get(e.pointerId);if(b){faceOwn.delete(e.pointerId);faceRelease(b)}};
+document.addEventListener('pointerup',faceEnd);document.addEventListener('pointercancel',faceEnd);
+document.querySelectorAll('#pad .pb:not(.f)').forEach(b=>{
   const k=b.dataset.k;
   b.addEventListener('pointerdown',e=>{audio();try{b.setPointerCapture(e.pointerId)}catch(_){}b.classList.add('on');if(!padSpecial(k))pressK(k);if(navigator.vibrate)try{navigator.vibrate(8)}catch(_){}e.preventDefault()});
   const up=e=>{b.classList.remove('on');releaseK(k)};
