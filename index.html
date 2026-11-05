@@ -1640,6 +1640,7 @@ function updStreet(dt){
   const inL=G.net&&lead.netGuest?netGInp():inp;
   updAth(lead,inL,dt);
   updAth(part,athUp(part)&&part.st!=='help'&&!(G.tut&&!G.tut.done)?(G.net?(part.netGuest?netGInp():inp):partnerInput(part,lead,dt)):{ax:0,ay:0},dt);
+  if(G.net)for(const a of [lead,part]){const p=NET.gpos;if(a.netGuest&&p&&(a.st==='idle'||a.st==='walk')&&performance.now()-p.at<400){a.x=clamp(p.x,G.cam+16,G.cam+W-16);a.y=clamp(p.y,FY0,FY1);a.face=p.f||a.face;a.run=p.run}}
   updRescue(dt);updTut(dt);
   if(G.photog)updPhotog(G.photog,lead,dt);
   for(const a of G.ath){a.x=clamp(a.x,Math.max(14,G.cam+16),Math.min(LEVEL_W-16,G.cam+W-16))}
@@ -2449,7 +2450,7 @@ function netStat(s,cls){const el=$('#netStat');if(el){el.textContent=s;el.classN
 function netLoadPeer(){return new Promise((ok,ko)=>{if(window.Peer)return ok();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js';s.onload=()=>ok();s.onerror=()=>ko(new Error('peerjs'));document.head.appendChild(s)})}
 
 /* --- transporte de pruebas (dos pestañas) --- */
-function netBC(code,role){const bc=new BroadcastChannel('kag-net-'+code),h={};const c={on(ev,f){h[ev]=f;return c},send(s){bc.postMessage({from:role,s})},close(){try{bc.postMessage({from:role,s:'__bye'})}catch(e){}bc.close()}};
+function netBC(code,role){const bc=new BroadcastChannel('kag-net-'+code),h={},LAG=+((/lag=(\d+)/.exec(location.hash)||[])[1]||0);const c={on(ev,f){h[ev]=f;return c},send(s){if(LAG)setTimeout(()=>bc.postMessage({from:role,s}),LAG/2+Math.random()*LAG*.2);else bc.postMessage({from:role,s})},close(){try{bc.postMessage({from:role,s:'__bye'})}catch(e){}bc.close()}};
   let open=false;const fire=()=>{if(!open){open=true;h.open&&h.open()}};
   bc.onmessage=ev=>{const d=ev.data;if(!d||d.from===role)return;if(d.s==='__hello'){bc.postMessage({from:role,s:'__welcome'});fire();return}if(d.s==='__welcome'){fire();return}if(d.s==='__bye'){h.close&&h.close();return}h.data&&h.data(d.s)};
   if(role==='guest'){bc.postMessage({from:role,s:'__hello'});setTimeout(()=>{if(!open)bc.postMessage({from:role,s:'__hello'})},400)}
@@ -2491,7 +2492,7 @@ function netLost(){if(!NET.role)return;const was=NET.on,role=NET.role;NET.on=fal
 /* --- mensajes --- */
 function netMsg(m){
   if(NET.role==='host'){
-    if(m.t==='i'){NET.gin.ax=m.ax||0;NET.gin.ay=m.ay||0;if(m.e)for(const k of m.e.split(','))if(k)NET.gedge[k]=true}
+    if(m.t==='i'){NET.gin.ax=m.ax||0;NET.gin.ay=m.ay||0;if(m.px!=null)NET.gpos={x:m.px,y:m.py,f:m.pf,run:!!m.pr,at:performance.now()};if(m.e)for(const k of m.e.split(','))if(k)NET.gedge[k]=true}
     return}
   // invitado
   if(m.t==='start'){NET.shownRes=false;_netStartGame(m.o);netGuestSetup();return}
@@ -2508,11 +2509,13 @@ function netGV(){if(!G||!G.net||!NET.gedge.v)return false;delete NET.gedge.v;ret
 const NET_SKIP=new Set(['pal','_an','tgt','grabber','helpT','tocaE','hitSet','sample','_tx','_ty','o','cat','rkKey','tut','grabT']);
 const NET_STATIC=new Set(['maxHp','dmg','reach','spd','armor','val','wpn','s','stunDur','kind','type','fem','items','mute']);
 function netRep(k,v){if(NET_SKIP.has(k))return undefined;if(NET_STATIC.has(k)&&this&&this._id&&NET.sent.has(this._id)&&this.kind!=='ath')return undefined; // lo fijo de cada juez/cajón solo se manda la primera vez
-  if(typeof v==='number')return Number.isInteger(v)?v:Math.round(v*100)/100;
+  if(typeof v==='number')return Number.isInteger(v)?v:Math.round(v*10)/10;
   if(v&&typeof v==='object'&&!Array.isArray(v)){const p=Object.getPrototypeOf(v);if(p!==Object.prototype&&p!==null)return undefined}
   if(k==='hit'&&Array.isArray(v))return undefined;
   return v}
-function netSnapshot(){for(const L of [G.en,G.proj,G.crates])for(const o of L||[])if(!o._id)o._id=++NET.uid;const s=JSON.stringify(G,netRep);for(const L of [G.en,G.crates])for(const o of L||[])NET.sent.add(o._id);return s}
+function netSnapshot(){for(const L of [G.en,G.proj,G.crates])for(const o of L||[])if(!o._id)o._id=++NET.uid;NET.full=(NET.full||0)-1;const full=NET.full<=0;if(full)NET.full=NET_HZ;NET.last=NET.last||{};const parts=[];
+  for(const k of Object.keys(G)){const v=netRep(k,G[k]);if(v===undefined)continue;const j=JSON.stringify(v,netRep);if(j===undefined)continue;if(full||NET.last[k]!==j){NET.last[k]=j;parts.push(JSON.stringify(k)+':'+j)}} // solo lo que ha cambiado (y todo una vez por segundo)
+  for(const L of [G.en,G.crates])for(const o of L||[])NET.sent.add(o._id);return '{'+parts.join(',')+'}'}
 function netHostTick(dt){NET.sendT+=dt;if(NET.sendT<1/NET_HZ)return;NET.sendT=0;
   let d;try{d=netSnapshot()}catch(e){console.error('snapshot',e);return}
   const snd=NET.snd;NET.snd=[];try{NET.conn.send('{"t":"s","snd":'+JSON.stringify(snd)+',"d":'+d+'}')}catch(e){}}
@@ -2529,7 +2532,13 @@ function netMergeList(old,arr,mk){const m=new Map();for(const o of old||[])if(o.
     for(const k in s){if(k==='x'||k==='y'){if(fresh)o[k]=s[k];o[k==='x'?'_tx':'_ty']=s[k]}else o[k]=s[k]}return o})}
 function netApply(S){
   for(const k in S){const v=S[k];
-    if(k==='ath')G.ath=netMergeList(G.ath,v,s=>({pal:(G.ath.find(a=>a._id===s._id)||G.ath[0]).pal}));
+    if(k==='ath'){const me=netMe(),keep=me&&{x:me.x,y:me.y,face:me.face,st:me.st,t:me.t,ph:me.ph,run:me.run,runT:me.runT,combo:me.combo,hph:me.hph,z:me.z,_pred:me._pred,_own:me._own};
+      G.ath=netMergeList(G.ath,v,s=>({pal:(G.ath.find(a=>a._id===s._id)||G.ath[0]).pal}));const m2=netMe();
+      if(keep&&m2){const srv=m2.st;
+        if(keep._pred>0&&!ATH_DOWN.has(srv)&&srv!=='hurt'&&srv!=='grab'&&srv!=='kick'){Object.assign(m2,{st:keep.st,t:keep.t,combo:keep.combo,hph:keep.hph,z:keep.z,_pred:keep._pred})} // mi animación ya empezó: no la reinicio
+        if(NET_FREE.has(srv)&&(NET_FREE.has(keep.st)||keep._pred>0)){Object.assign(m2,{x:keep.x,y:keep.y,face:keep.face,ph:keep.ph,run:keep.run,runT:keep.runT,_own:true});if(!(keep._pred>0))m2.st=keep.st;m2._tx=null;m2._ty=null;
+          if(Math.abs(m2.x-(m2._sx=v.find(a=>a._id===m2._id).x))>140){m2.x=m2._sx}} // si nos hemos ido muy lejos, manda el anfitrión
+        else m2._own=false}}
     else if(k==='en')G.en=netMergeList(G.en,v,s=>({pal:JPAL[s.type]}));
     else if(k==='crates')G.crates=netMergeList(G.crates,v,s=>({}));
     else if((k==='photog'||k==='vendor')&&v&&G[k]){const keep=G[k].pal;Object.assign(G[k],v);G[k].pal=keep}
@@ -2537,14 +2546,26 @@ function netApply(S){
   if(G.phase==='wod'&&!app.classList.contains('wod')){app.classList.add('wod');setActLabel('LEVANTAR')}
   if(G.phase==='over'&&G.final&&!NET.shownRes){NET.shownRes=true;mode='results';clearKeys();setTimeout(()=>{if(NET.role==='guest')showResults()},1300)}
 }
+const NET_FREE=new Set(['idle','walk']);
+function netMe(){return G&&G.ath&&G.ath.find(a=>a.netGuest)}
 function netGuestUpdate(dt){
-  // mis botones → anfitrión
-  const e=['z','k','j','dodge','v','enter','left','right'].filter(k=>edge[k]).join(','),ax=Math.round(axisX()*100)/100,ay=Math.round(axisY()*100)/100,sig=ax+'|'+ay;
-  NET.inT=(NET.inT||0)+dt;if(e||sig!==NET.lastIn||NET.inT>.15){NET.lastIn=sig;NET.inT=0;netSend({t:'i',ax,ay,e})}
+  const me=netMe(),ax=Math.round(axisX()*100)/100,ay=Math.round(axisY()*100)/100,EK=['z','k','j','dodge','v','enter','left','right'].filter(k=>edge[k]),e=EK.join(',');
+  // 1) mi atleta: movimiento propio sin esperar al anfitrión
+  if(me&&G.phase==='street'&&G.mode2!=='photo'&&NET_FREE.has(me.st)&&!(me._pred>0)){
+    if(ax*me.face>.85)me.runT=(me.runT||0)+dt;else me.runT=0;me.run=me.runT>.4;
+    me.x+=ax*(me.run?150:102)*dt;me.y=clamp(me.y+ay*66*dt,FY0,FY1);if(ax)me.face=ax>0?1:-1;
+    me.st=(ax||ay)?'walk':'idle';if(me.st==='walk')me.ph=(me.ph||0)+dt*10;me.x=clamp(me.x,G.cam+16,G.cam+W-16);me._own=true;
+    // respuesta inmediata a los botones (la animación empieza ya; el anfitrión confirma el golpe)
+    const pk=edge.z&&!me.carry?'atk':edge.k?'pkick':edge.j?'hop':edge.dodge?'roll':null;
+    if(pk&&!(edge.z&&(G.en||[]).some(o=>o.st==='grabbed'))){me.st=pk;me.t=0;me._pred=.35;if(pk==='atk'){me.combo=0;me.dur=me.dur||.4}if(pk==='hop'){me.hph=0;me.z=0}}}
+  if(me&&me._pred>0)me._pred-=dt;
+  // 2) mis botones y mi posición → anfitrión (hasta 30 veces por segundo mientras me muevo)
+  const sig=ax+'|'+ay;NET.inT=(NET.inT||0)+dt;const moving=me&&me._own&&(ax||ay);
+  if(e||sig!==NET.lastIn||NET.inT>(moving?1/30:.15)){NET.lastIn=sig;NET.inT=0;const m={t:'i',ax,ay,e};if(me&&me._own&&NET_FREE.has(me.st)){m.px=Math.round(me.x*10)/10;m.py=Math.round(me.y*10)/10;m.pf=me.face;m.pr=me.run?1:0}netSend(m)}
   if(NET.snap){const s=NET.snap;NET.snap=null;try{netApply(s)}catch(err){console.error(err)}}
   // suavizado entre fotos del estado
   const k=Math.min(1,dt*18);
-  for(const L of [G.ath,G.en])for(const o of L||[]){if(o._tx!=null){if(Math.abs(o._tx-o.x)>90)o.x=o._tx;else o.x+=(o._tx-o.x)*k}if(o._ty!=null){if(Math.abs(o._ty-o.y)>60)o.y=o._ty;else o.y+=(o._ty-o.y)*k}o.t=(o.t||0)+dt;o.bobT=(o.bobT||0)+dt}
+  for(const L of [G.ath,G.en])for(const o of L||[]){if(o._own&&o.netGuest&&NET_FREE.has(o.st)){o.bobT=(o.bobT||0)+dt;continue}if(o._tx!=null){if(Math.abs(o._tx-o.x)>90)o.x=o._tx;else o.x+=(o._tx-o.x)*k}if(o._ty!=null){if(Math.abs(o._ty-o.y)>60)o.y=o._ty;else o.y+=(o._ty-o.y)*k}o.t=(o.t||0)+dt;o.bobT=(o.bobT||0)+dt}
   G.run+=dt;if(G.shake>0)G.shake=Math.max(0,G.shake-dt);if(G.bigT>0)G.bigT-=dt;
 }
 
@@ -2555,7 +2576,7 @@ update=function(dt){if(NET.role==='guest'&&G&&G.netG){netGuestUpdate(dt);return}
 startGame=function(o){
   if(NET.role==='guest'&&NET.on){netStat('La partida la empieza tu pareja. Espera un momento…','ok');if(mode!=='menu'){_netShowMenu()}menuGo('net');return}
   _netStartGame(o);
-  if(NET.on&&NET.role==='host'){G.net=true;G.tut=null;G.ath[0]._id='A';G.ath[1]._id='B';G.ath.forEach(a=>a.human=true);G.ath[1].netGuest=true;NET.snd=[];NET.sent.clear();NET.gedge={};netSend({t:'start',o})}};
+  if(NET.on&&NET.role==='host'){G.net=true;G.tut=null;G.ath[0]._id='A';G.ath[1]._id='B';G.ath.forEach(a=>a.human=true);G.ath[1].netGuest=true;NET.snd=[];NET.sent.clear();NET.last={};NET.full=0;NET.gedge={};netSend({t:'start',o})}};
 showMenu=function(){if(NET.on&&NET.role==='host')netSend({t:'menu'});_netShowMenu()};
 submitScore=function(rec){if(NET.role==='guest'){setTimeout(()=>{const s=$('#rSave');if(s)s.textContent='Tu pareja guarda la puntuación del equipo.'},50);return Promise.resolve()}return _netSubmit(rec)};
 // ids fijos de los atletas en los dos móviles (para conservar sus colores)
