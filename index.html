@@ -1401,6 +1401,7 @@ function killE(e,dir){e.st='dying';e.t=0;e.vx=dir*240;e.flash=.15;if(!e.tut){G.k
   /* los extras ya no caen de los jueces: salen de los cajones (c_crate.js) */}
 function hurtE(e,dmg,dir,kd,kb){
   if(e.type==='rower'&&!rowerBlock(e,dir)&&!(e.hitT>.5))e.hitT=.85;
+  if(e.type==='e3'&&e.st==='hs'){e.hp-=dmg*.5;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*2);burst(e.x,e.y-34,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return}
   if(e.type==='e2'&&e.st==='dl'&&!e2Inv(e)){e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-34,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return} // no se le interrumpe el levantamiento
   if(e2Inv(e)){e.flash=.05;burst(e.x,e.y-40,8,'#ffb030',160);SFX.click();if(!e.clangT||G.run-e.clangT>.6){e.clangT=G.run;ftext(e.x,e.y-100,'¡INVENCIBLE!','#ffb030',11)}return}
   if(rowerBlock(e,dir)){e.flash=.05;burst(e.x+e.face*40,e.y-30,8,'#cfd6e0',160);SFX.click();if(!e.clangT||G.run-e.clangT>.8){e.clangT=G.run;ftext(e.x+e.face*30,e.y-80,'¡CLONK! POR DETRÁS','#cfd6e0',10)}return}
@@ -1619,10 +1620,10 @@ function updJudge(e,dt){
     case 'strike':e.vx=0;if(!e.done){e.done=true;meleeJudge(e)}if(e.t>=.18){e.st='recover';e.t=0}break;
     case 'recover':e.vx=0;if(e.t>=.5){e.st='walk';e.cd=rr(.9,1.9)*(e.type==='chief'?.55:1)}break;
     case 'jthrow':e.vx=e.vy=0;if(e.t>=.27&&!e.done){e.done=true;G.proj.push({kind:'card',x:e.x+e.face*14,y:e.y,vx:e.face*165,face:e.face,dmg:e.dmg,life:3,rot:0});shout(e);SFX.throw()}if(e.t>=.6){e.st='walk';e.cd=rr(1.8,3)}break;
-    case 'hurt':e.vx*=Math.pow(.03,dt);if(e.t>=.28){e.st='walk'}break;
+    case 'hurt':e.vx*=Math.pow(.03,dt);if(e.t>=.28){e.st='walk';if(e.type==='e3')e.cd=Math.min(e.cd,.15)}break;
     case 'down':e.vx*=Math.pow(.04,dt);if(e.t>=.95){e.st='getup';e.t=0}break;
     case 'stun':e.vx*=Math.pow(.03,dt);if(e.t>=e.stunDur){e.st='getup';e.t=0}break;
-    case 'getup':e.vx=0;e.inv=.2;if(e.t>=.35){e.st='walk';e.cd=rr(.5,1)}break;
+    case 'getup':e.vx=0;e.inv=.2;if(e.t>=.35){e.st='walk';e.cd=e.type==='e3'?0:rr(.5,1)}break;
     case 'dying':e.vx*=Math.pow(.05,dt);if(e.t>=.7)e.dead=true;break;
     case 'grabbed':e.vx=e.vy=0;if(!e.grabber||(e.grabber.st!=='grab'&&e.grabber.st!=='kick')){e.st='walk';e.grabber=null}break;
     case 'kicked':updKicked(e,dt);e.vy=0;break;
@@ -1949,8 +1950,8 @@ const WAVE_IMG=(()=>{const i=new Image();i.src=ELITE.wave[0];return i})();
 /* E2 · El Tizas: deadlift → lo estampa contra el suelo → onda expansiva por el suelo (hay que saltar). Invencible en el golpe. */
 JT.e2={hp:90,spd:40,dmg:13,reach:30,wpn:'none',s:1,val:450,armor:false,mute:true};JPAL.e2=JPAL.base;
 /* E3 · La Coleta: de pie se acerca; al tenerte cerca se pone en el pino, avanza sobre las manos y suelta dos patadas */
-JT.e3={hp:70,spd:52,dmg:11,reach:30,wpn:'none',s:1,val:400,armor:false,mute:true};JPAL.e3=JPAL.base;
-const HS={e3:{dur:1.6,k:[.85,1.25]}};
+JT.e3={hp:95,spd:52,dmg:13,reach:30,wpn:'none',s:1,val:400,armor:false,mute:true};JPAL.e3=JPAL.base;
+const HS={e3:{dur:1.45,k:[.72,1.08]}};
 const ELITE_T=new Set(['e2','e3']);
 const E2_DL=1.9,E2_IMP=1.22,E2_INV=[1.02,1.5];
 function updE2(e,tg,dt){
@@ -1968,11 +1969,11 @@ function updE3(e,tg,dt){const H=HS[e.type];
   switch(e.st){
     case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*58;
       const mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0,my=Math.abs(dy)>5?Math.sign(dy)*.7:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
-      if(e.cd<=0&&Math.abs(dx)<95&&Math.abs(dy)<14&&athUp(tg)){e.st='hs';e.t=0;e.vx=e.vy=0;e.hsHit=[];SFX.swing()}}break;
-    case 'hs':{e.vy=0;const t=e.t;e.vx=t>.3&&t<H.k[1]+.1?e.face*62:0;
+      if(e.cd<=0&&Math.abs(dx)<135&&Math.abs(dy)<18&&athUp(tg)){e.st='hs';e.t=0;e.vx=e.vy=0;e.hsHit=[];SFX.swing()}}break;
+    case 'hs':{e.vy=0;const t=e.t;e.vx=t>.15&&t<H.k[1]+.1?e.face*95:0;if(t<.5){const tg2=nearestAth(e);if(tg2)e.vy=clamp((tg2.y-e.y)*4,-40,40)}
       for(const kt of H.k)if(t>=kt-.12&&t<kt+.1)for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>26||e.hsHit.includes(a.x+'|'+kt))continue;const dx=(a.x-e.x)*e.face;
         if(dx>4&&dx<74&&Math.abs(a.y-e.y)<16){e.hsHit.push(a.x+'|'+kt);hurtAth(a,e.dmg,e.face);SFX.hit();G.shake=Math.max(G.shake,.15)}}
-      if(t>=H.dur){e.st='walk';e.t=0;e.cd=rr(1.6,2.6)}}break;
+      if(t>=H.dur){e.st='walk';e.t=0;e.cd=rr(1.2,2)}}break;
   }
   e.x=clamp(e.x+e.vx*dt,-60,LEVEL_W+60);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
 }
