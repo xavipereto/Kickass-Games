@@ -1673,7 +1673,7 @@ function spawnWave(w){
   const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):'base');
   list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
     if(t==='rower'){startTalk('rower');e.x=G.cam+W+100;e.y=rowerLane();e.face=-1;e.shCd=1.5;e.offT=1.5;e.sprint=false}
-    if(t==='chief'){e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
+    if(t==='chief'){startTalk('chief');e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
     G.en.push(e)});
   G.lockX=G.cam;G.cleared=false;if(!G.talk)bigMsg(boss?'¡SPEAKER ENTRA EN PISTA!':list.includes('rower')?'¡LLEGA '+ROWER_NAME+'!':'¡NO REP A LA VISTA!',1.6);
 }
@@ -2017,16 +2017,17 @@ function drawElite(g,e){if(!ELITE_IMG.complete||!ELITE_IMG.naturalWidth)return;
 /* ===== RETRATOS CON DIÁLOGO (antes de que entre un jefe) =====
    La acción se congela, el busto entra por arriba a la derecha y habla; se cierra solo o al pulsar. */
 const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
-const TALKS={rower:{name:'EL ORGANIZADOR',txt:'Vaya, ya están estos en medio de la pista molestando… Otra vez teniendo que saltar obstáculos. ¡Estos se van a enterar!'}};
-function startTalk(who){if(!PORTRAITS[who]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
+const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio de la pista molestando… Otra vez teniendo que saltar obstáculos. ¡Estos se van a enterar!']},
+  chief:{name:'SPEAKER',pages:['¡Sube ese volumen! Habéis llegado lejos… ¡Pero aquí el que manda en la pista soy yo!','Si creéis que sois capaces de venir a la KickAss Games, tenéis que pasar por las peores pesadillas de una competición: ¡lluvia y sol intenso!','¡Aquí tenéis mi level WOD particular, novatos!']}};
+function startTalk(who){if(!PORTRAITS[who]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
 const TALK_CPS=34; // letras por segundo
-function updTalk(dt){const k=G.talk;k.t+=dt;const T=TALKS[k.who],full=T.txt.length/TALK_CPS+.35;
+function updTalk(dt){const k=G.talk;k.t+=dt;const T=TALKS[k.who],txt=T.pages[k.pg],full=txt.length/TALK_CPS+.35,last=k.pg>=T.pages.length-1;
   const skip=edge.z||edge.k||edge.j||edge.dodge||edge.enter||(typeof netWodAct==='function'&&netWodAct());
-  if(k.out<0&&(skip||k.t>full+1.6)){if(skip&&k.t<full){k.t=full}else k.out=0}
+  if(k.out<0&&(skip||k.t>full+1.6)){if(skip&&k.t<full){k.t=full}else if(!last){k.pg++;k.t=0}else k.out=0}
   if(k.out>=0){k.out+=dt;if(k.out>=.35){G.talk=null;musicDuck(1,10)}}
   updFx(dt)}
-function drawTalk(g){const k=G.talk;if(!k)return;const P=PORTRAITS[k.who],T=TALKS[k.who],img=PORT_IMG[k.who];
-  const inK=Math.min(1,k.t/.3),outK=k.out>=0?Math.min(1,k.out/.35):0,slide=(1-inK)+outK,ph=P.h,pw=P.w;
+function drawTalk(g){const k=G.talk;if(!k)return;const P=PORTRAITS[k.who],T0=TALKS[k.who],img=PORT_IMG[k.who],T={name:T0.name,txt:T0.pages[k.pg]},first=k.pg===0;
+  const inK=first?Math.min(1,k.t/.3):1,outK=k.out>=0?Math.min(1,k.out/.35):0,slide=(1-inK)+outK,ph=P.h,pw=P.w;
   g.save();g.globalAlpha=.55*(1-outK)*inK;g.fillStyle='#000';g.fillRect(0,0,W,H);g.restore(); // oscurece el fondo
   const px=Math.round(W-pw+4+slide*(pw+20)),py=6;
   // franja diagonal detrás del busto
