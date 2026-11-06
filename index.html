@@ -1423,7 +1423,7 @@ function hurtE(e,dmg,dir,kd,kb){
   if((e.type==='e3'||e.type==='e4')&&e.st==='hs'){e.hp-=dmg*.5;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*2);burst(e.x,e.y-34,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return}
   if(e.type==='e2'&&e.st==='dl'&&!e2Inv(e)){e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-34,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return} // no se le interrumpe el levantamiento
   if(e2Inv(e)){e.flash=.05;burst(e.x,e.y-40,8,'#ffb030',160);SFX.click();if(!e.clangT||G.run-e.clangT>.6){e.clangT=G.run;ftext(e.x,e.y-100,'¡INVENCIBLE!','#ffb030',11)}return}
-  if(rowerBlock(e,dir)){e.flash=.05;burst(e.x+e.face*40,e.y-30,8,'#cfd6e0',160);SFX.click();if(!e.clangT||G.run-e.clangT>.8){e.clangT=G.run;ftext(e.x+e.face*30,e.y-80,'¡CLONK! POR DETRÁS','#cfd6e0',10)}return}
+  if(rowerBlock(e,dir)){e.flash=.05;burst(e.x+e.face*40,e.y-30,8,'#cfd6e0',160);SFX.click();if(!e.clangT||G.run-e.clangT>.8){e.clangT=G.run;ftext(e.x+e.face*30,e.y-80,'¡CLONK! POR UN LADO','#cfd6e0',10)}return}
   if(G.power>0){dmg=e.type==='chief'?dmg*2:Math.max(dmg,e.hp+1);burst(e.x,e.y-40,10,'#ff2bd6',200)}
   dmg=bossCap(e,dmg);e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-34,6,'#fff6c0',130);
   if(e.hp<=0){killE(e,dir);return}
@@ -1471,7 +1471,7 @@ function returnBalls(a,reach){let n=0;for(const p of G.proj){if(p.kind!=='card')
     ftext(p.x,p.y-58,'¡DEVUELTA!','#4fe3df',12);burst(p.x,p.y-30,12,'#4fe3df',200);ring(p.x,p.y-30,40);photoCharge(6)}}return n}
 function doMelee(a){
   const i=a.combo,reach=i===2?66:58,dmg=([10,10,17][i])*(a.lead||a.human?1:.8),kd=i===2;let n=0;
-  for(const e of G.en){if(!canHit(e))continue;const dx=(e.x-a.x)*a.face;if(dx>-8&&dx<=reach&&Math.abs(e.y-a.y)<=17){hurtE(e,dmg,a.face,kd,kd?230:100);n++}}
+  HIT_FROM=a;for(const e of G.en){if(!canHit(e))continue;const dx=(e.x-a.x)*a.face;if(dx>-8&&dx<=reach+(e.type==='rower'?20:0)&&Math.abs(e.y-a.y)<=(e.type==='rower'?ROW_SIDE:17)){hurtE(e,dmg,a.face,kd,kd?230:100);n++}}HIT_FROM=null;
   n+=returnBalls(a,reach);
   n+=crateMelee(a,reach,kd?2:1);
   if(n){G.hitstop=kd?.09:.05;G.shake=Math.max(G.shake,kd?.2:.1);SFX.hit();photoCharge(6*Math.min(n,3))}else SFX.swing();
@@ -1524,7 +1524,7 @@ function startKick(a){tutEv(a,'kick');a.st='pkick';a.t=0;a.hit=false;SFX.swing()
 let AIRHIT=false; // las patadas en el aire sí alcanzan a un juez que salta
 function doKick(a,air){AIRHIT=!!air;try{return doKick_(a,air)}finally{AIRHIT=false}}
 function doKick_(a,air){const reach=air?58:64,dmg=(air?16:14)*(a.lead||a.human?1:.8);let n=0;
-  for(const e of G.en){if(!canHit(e))continue;const dx=(e.x-a.x)*a.face;if(dx>-8&&dx<=reach&&Math.abs(e.y-a.y)<=18){hurtE(e,dmg,a.face,true,air?240:260);n++}}
+  HIT_FROM=a;for(const e of G.en){if(!canHit(e))continue;const dx=(e.x-a.x)*a.face;if(dx>-8&&dx<=reach+(e.type==='rower'?20:0)&&Math.abs(e.y-a.y)<=(e.type==='rower'?ROW_SIDE:18)){hurtE(e,dmg,a.face,true,air?240:260);n++}}HIT_FROM=null;
   n+=crateMelee(a,reach,2);n+=returnBalls(a,reach);
   if(n){G.hitstop=.08;G.shake=Math.max(G.shake,.18);SFX.hit();photoCharge(7*Math.min(n,3));burst(a.x+a.face*reach*.8,a.y-34-(a.z||0),8,'#fff6c0',160)}else SFX.swing()}
 function startHop(a){tutEv(a,'hop');a.st='hop';a.t=0;a.z=0;a.vz=0;a.hph=0;a.jk=false;a.jkHit=false;a.jkT=0}
@@ -1921,7 +1921,7 @@ const ROW_SHOUTS=['¡OJO QUE PASOOO!','¡CUIDAOOO!','¡APARTARSUS!'];
 function rowerShout(e){e.shoutTxt=ROW_SHOUTS[(e.shI=((e.shI==null?-1:e.shI)+1)%ROW_SHOUTS.length)];e.shout=1.5;musicDuck(.5,900)} // zona peligrosa delante de su cuerpo (x relativa)
 function rowerFrontHit(e,dmg,kb){
   for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>24)continue;const dx=(a.x-e.x)*e.face;
-    if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(a.y-e.y)<16){hurtAth(a,dmg,e.face);if(a.st==='hurt'){a.vx=e.face*kb}G.shake=Math.max(G.shake,.25);SFX.hit()}}
+    if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(a.y-e.y)<ROW_LANE){hurtAth(a,dmg,e.face);if(a.st==='hurt'){a.vx=e.face*kb}G.shake=Math.max(G.shake,.25);SFX.hit()}}
   for(const j of G.en){if(j===e||!canHit(j)||j.type==='chief'||j.type==='rower')continue;const dx=(j.x-e.x)*e.face;
     if(dx>ROW_FRONT[0]&&dx<ROW_FRONT[1]&&Math.abs(j.y-e.y)<16&&!(j.rowHitT>0)){j.rowHitT=.6;hurtE(j,18,e.face,true,260)}}}
 function rowerLane(){const up=G.ath.filter(a=>athUp(a));const a=up.length?up[Math.floor(Math.random()*up.length)]:G.ath[0];return clamp(a.y,FY0+6,FY1-4)}
@@ -1945,7 +1945,9 @@ function updRower(e,dt){if(e.hitT>0)e.hitT-=dt; // pasadas de lado a lado: no pe
   e.vy=0;e.x+=e.vx*dt;
 }
 // golpes: si vienen de delante, choca con la máquina
-function rowerBlock(e,dir){return e.type==='rower'&&e.st!=='dying'&&dir!==e.face}
+// la máquina solo cubre su carril: desde un lado (otro carril) o por detrás sí entra el golpe
+const ROW_LANE=10,ROW_SIDE=30;let HIT_FROM=null;
+function rowerBlock(e,dir){if(e.type!=='rower'||e.st==='dying'||dir===e.face)return false;if(HIT_FROM&&Math.abs(HIT_FROM.y-e.y)>=ROW_LANE)return false;return true}
 /* --- dibujo --- */
 function rowerFrame(e){const F=ROWER.fr,t=e.t||0;
   switch(e.st){
