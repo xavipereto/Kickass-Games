@@ -1539,7 +1539,7 @@ function updHop(a,inp,dt){let vx=inp.ax*96,vy=inp.ay*42;if(inp.ax)a.face=inp.ax>
   return[vx,vy]}
 function startThrow(a){tutEv(a,'atk');tutEv(a,'slam');a.carry=null;smpPlay('db_'+((a.pal&&a.pal.spr)||''),1);a.st='throw';a.t=0;a.hit=false;a.throwCd=.55;a.tcd=1.2}
 function startSlam(a){tutEv(a,'atk');tutEv(a,'slam');smpPlay('wb_'+((a.pal&&a.pal.spr)||''),1);a.carry=null;a.st='slam';a.t=0;a.hit=false;a.inv=Math.max(a.inv,.35)}
-function startRoll(a,inp){tutEv(a,'roll');a.st='roll';a.t=0;a.inv=.4;a.rollCd=.75;const dx=inp.ax||a.face;a.rvx=Math.sign(dx)*250;a.rvy=(inp.ay||0)*90;if(inp.ax)a.face=inp.ax>0?1:-1;SFX.roll()}
+function startRoll(a,inp){tutEv(a,'roll');a.st='roll';a.t=0;a.inv=.4;a.rollCd=.6;const dx=inp.ax||a.face;a.rvx=Math.sign(dx)*250;a.rvy=(inp.ay||0)*90;if(inp.ax)a.face=inp.ax>0?1:-1;SFX.roll()}
 function doSlam(a){
   const cx=a.x+a.face*46,cy=a.y;let n=0;crateArea(cx,cy,88,48,3);
   for(const e of G.en){if(e.st==='dying'||e.inv>0||(e.z||0)>18)continue;if(Math.abs(e.x-cx)<88&&Math.abs(e.y-cy)<48){hurtE(e,26,e.x>=a.x?1:-1,true,240);n++}}
@@ -1563,6 +1563,7 @@ function updAth(a,inp,dt){
     case 'grab':updGrab(a,inp,dt);break;
     case 'kick':updKick(a,dt);break;
     case 'atk':
+      if(inp.dodge&&a.hit&&a.rollCd<=0){startRoll(a,inp);break}
       vx=a.t<a.dur*.5?a.face*55:0;
       if(inp.z&&a.t>.08)a.buf=true;
       if(!a.hit&&a.t>=a.hitT){a.hit=true;doMelee(a)}
@@ -1707,20 +1708,23 @@ function lifeLost(){
   if(G.lives>0){G.lives--;G.hp=65;G.ath.forEach(a=>{a.inv=1.8;a.st='idle'});for(const e of G.en){if(e.st==='dying'||e.type==='rower')continue;if(Math.abs(e.x-G.ath[0].x)<120){e.st='down';e.t=0;e.vx=(e.x>G.ath[0].x?1:-1)*260}}bigMsg('¡OTRA VIDA!',1.4);ring(G.ath[0].x,G.ath[0].y,110);SFX.pick()}
   else finishRun('lost')
 }
+const IBUF={j:0,dodge:0};
 function updStreet(dt){
   G.run+=dt;G.hintT+=dt;G.goT+=dt;if(G.power>0){G.power=Math.max(0,G.power-dt);if(G.power===0)ftext(G.ath[0].x,G.ath[0].y-80,'FIN MODO KICKASS','#ff9ad5',10)}
   if(G.vendor){G.vendor.t+=dt;G.vendor.bobT+=dt}
-  if(G.talk){updTalk(dt);return}
+  if(G.talk){updTalk(dt);IBUF.j=IBUF.dodge=0;return}
+  // búfer de entrada: un salto o esquiva pulsado durante el parón de impacto o al final de otra acción no se pierde
+  IBUF.j=edge.j?.25:Math.max(0,IBUF.j-dt);IBUF.dodge=edge.dodge?.25:Math.max(0,IBUF.dodge-dt);
   if(G.hitstop>0){G.hitstop-=dt;updFx(dt*.4);return}
   const [lead,part]=G.ath;
   if(G.tut&&!G.tut.done){if(edge.swap)tutEnd(true)}else if(edge.swap&&!G.net)trySwap();
   updSwap(dt);
-  const inp={ax:axisX(),ay:axisY(),z:!!edge.z,k:!!edge.k,j:!!edge.j,dodge:!!edge.dodge};
+  const inp={ax:axisX(),ay:axisY(),z:!!edge.z,k:!!edge.k,j:!!edge.j||IBUF.j>0,dodge:!!edge.dodge||IBUF.dodge>0};
   if((edge.v||netGV())&&G.photog&&G.photo>=100&&(lead.st==='idle'||lead.st==='walk')&&athUp(G.ath[1])&&G.ath[1].st!=='help')return startPhoto();
   if(G.koT>0){G.koT-=dt;updFx(dt);if(G.koT<=0)finishRun('lost');return}
   if(!athUp(lead)){finishRun('lost');return}
   const inL=G.net&&lead.netGuest?netGInp():inp;
-  updAth(lead,inL,dt);
+  {const s0=lead.st;updAth(lead,inL,dt);if(lead.st!==s0){if(lead.st==='hop')IBUF.j=0;if(lead.st==='roll')IBUF.dodge=0}}
   updAth(part,athUp(part)&&part.st!=='help'&&!(G.tut&&!G.tut.done)?(G.net?(part.netGuest?netGInp():inp):partnerInput(part,lead,dt)):{ax:0,ay:0},dt);
   if(G.net)for(const a of [lead,part]){const p=NET.gpos;if(a.netGuest&&p&&(a.st==='idle'||a.st==='walk')&&performance.now()-p.at<400){a.x=clamp(p.x,G.cam+16,G.cam+W-16);a.y=clamp(p.y,FY0,FY1);a.face=p.f||a.face;a.run=p.run}}
   updRescue(dt);updTut(dt);
