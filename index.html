@@ -1996,7 +1996,9 @@ function updE5(e,tg,dt){
 function updKB(dt){if(!G.kbs||!G.kbs.length)return;
   G.kbs=G.kbs.filter(k=>{k.life-=dt;k.x+=k.vx*dt;k.vz-=620*dt;k.z+=k.vz*dt;k.rot+=dt*(k.b?6:12)*Math.sign(k.vx);
     if(k.z<=0){k.z=0;if(k.b<1&&Math.abs(k.vz)>60){k.vz=-k.vz*.3;k.b++;smpPlay('wbcae',.6,.8);G.shake=Math.max(G.shake,.12)}else{k.vz=0}k.vx*=Math.pow(.15,dt)}
-    if(k.b<1||Math.abs(k.vx)>60)for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||k.hit.includes(a))continue;
+    if(k.own){if(k.b<1||Math.abs(k.vx)>60)for(const e of G.en){if(!canHit(e)||k.hit.includes(e))continue;
+      if(Math.abs(e.x-k.x)<20&&Math.abs(e.y-k.y)<16&&k.z<70){k.hit.push(e);hurtE(e,k.dmg,Math.sign(k.vx)||1,true,260);G.hitstop=.06;G.shake=Math.max(G.shake,.22);burst(e.x,e.y-34,10,'#ffd23f',180);SFX.hit()}}}
+    else if(k.b<1||Math.abs(k.vx)>60)for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||k.hit.includes(a))continue;
       if(Math.abs(a.x-k.x)<16&&Math.abs(a.y-k.y)<12&&(a.z||0)<k.z+22&&k.z<(a.z||0)+70){k.hit.push(a);hurtAth(a,k.dmg,Math.sign(k.vx)||1,.5);SFX.hit()}}
     crateProj({x:k.x,y:k.y,face:Math.sign(k.vx)},1);
     return k.life>0&&k.x>G.cam-80&&k.x<G.cam+W+80})}
@@ -2062,6 +2064,12 @@ function drawElite(g,e){if(!ELITE_IMG.complete||!ELITE_IMG.naturalWidth)return;
   if(e2Inv(e)){g.shadowColor='#ffb030';g.shadowBlur=14}
   g.drawImage(ELITE_IMG,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore();
   if(e.hp<e.maxHp&&e.st!=='dying'){const w=30;bar(g,Math.round(e.x-w/2),Math.round(e.y-96),w,4,e.hp/e.maxHp,'#ff9a1a','#10303a')}}
+
+// la kettlebell se puede devolver con un golpe de barra o una patada (como la wall ball)
+function returnKBs(a,reach){let n=0;if(!G.kbs)return 0;for(const k of G.kbs){if(k.own)continue;const dx=(k.x-a.x)*a.face;
+  if(dx>-14&&dx<=reach+45&&Math.abs(k.y-a.y)<=22&&k.z<80){k.own=true;k.vx=a.face*Math.max(360,Math.abs(k.vx)*1.6);k.vz=90;k.z=Math.max(k.z,30);k.b=0;k.hit=[];k.life=1.8;k.dmg=26;n++;
+    ftext(k.x,k.y-58,'¡DEVUELTA!','#4fe3df',12);burst(k.x,k.y-30,12,'#4fe3df',200);ring(k.x,k.y-30,40);photoCharge(6);G.shake=Math.max(G.shake,.15)}}return n}
+{const _rb=returnBalls;returnBalls=function(a,reach){return _rb(a,reach)+returnKBs(a,reach)}}
 /* ===== RETRATOS CON DIÁLOGO (antes de que entre un jefe) =====
    La acción se congela, el busto entra por arriba a la derecha y habla; se cierra solo o al pulsar. */
 const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
