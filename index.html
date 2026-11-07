@@ -1691,7 +1691,7 @@ function updProj(dt){
   });
 }
 function spawnWave(w){
-  const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):'base');
+  const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<G.cat.extra;i++)list.push(boss?(i%2?'acf':'acm'):G.lvl===2?['e2','e3','e4','e5'][Math.floor(Math.random()*4)]:'base');
   list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
     if(t==='rower'){startTalk('rower');e.x=G.cam+W+100;e.y=rowerLane();e.face=-1;e.shCd=1.5;e.offT=1.5;e.sprint=false}
     if(t==='e6'){startTalk('e6');e.x=G.cam+W-90;e.y=(FY0+FY1)/2;e.face=-1;e.cd=1.2;e.palCd=6}
@@ -3013,13 +3013,13 @@ const B2_PROPS=[['plates',260],['kbs',520],['rower',760],['rower',820],['plyo',1
 const B2_CLOCKS=[700,1900,3100];
 const B2_DOOR_X=4140;
 const WAVES1=WAVES.slice();
-const WAVES2=[ // enemigos provisionales hasta tener los del box
-  {x:480,e:['e3','e5','base']},
-  {x:1150,e:['e2','e3','flag','e4']},
-  {x:1800,e:['e2','e4','e5','flag']},
-  {x:2500,e:['e3','e2','e4','e5','e2']},
-  {x:3250,e:['e6','base','flag']},
-  {x:3700,e:['brute','brute','base','flag','flag']}];
+const WAVES2=[ // solo la élite del Lynx (sin los jueces de la calle)
+  {x:480,e:['e3','e5']},
+  {x:1150,e:['e2','e3','e4']},
+  {x:1800,e:['e2','e4','e5']},
+  {x:2500,e:['e3','e2','e4','e5']},
+  {x:3250,e:['e6','e2']},
+  {x:3700,e:['e2','e3','e4','e5','e5']}];
 function setLevel(n){G.lvl=n;try{musicTrack(n===2?'box':'main')}catch(e){}WAVES.length=0;WAVES.push(...(n===2?WAVES2:WAVES1));if(n===2){G.vendor=null;G.bought=true;G.shock=[];G.kbs=[];G.pals=[];G.waveI=0;G.lockX=null;G.cam=0;G.en.length=0;G.pick.length=0;G.crates=mkCrates();
   G.ath.forEach((a,i)=>{a.x=150-i*40;a.y=272+i*24;a.st='idle';a.carry=null});bigMsg('INTERIOR DEL BOX',1.8)}}
 function okB(i){return i&&i.complete&&i.naturalWidth}
