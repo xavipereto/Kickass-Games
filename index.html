@@ -2649,6 +2649,41 @@ function instShow(){
   instSync();
   if(/[?&]instalar\b/.test(location.search)&&!instStandalone())setTimeout(instShow,900);
 })();
+/* ===== MENÚS CON TECLADO Y MANDO =====
+   Flechas (o WASD / cruceta del mando) para moverse entre las opciones visibles; Enter, Espacio o Z (A del mando) para elegir.
+   Pensado también para iPad con teclado, donde el tabulador no recorre los botones. */
+function navRoot(){if(mode==='pause')return $('#pause');if(mode==='results'&&!$('#results').hidden)return $('#results');if(mode==='menu'&&!$('#menu').hidden)return $('#menu .mp:not([hidden])');return null}
+function navItems(root){return [...root.querySelectorAll('button,input,a[href],[tabindex="0"]')].filter(el=>{if(el.disabled||el.tabIndex<0||el.closest('[hidden]'))return false;const r=el.getBoundingClientRect();return r.width>2&&r.height>2&&getComputedStyle(el).visibility!=='hidden'})
+  .concat([...document.querySelectorAll('#menu .mnav button,#menu .mform .mnav button')].filter(el=>mode==='menu'&&!el.closest('[hidden]')&&el.getBoundingClientRect().width>2))
+  .filter((el,i,a)=>a.indexOf(el)===i)}
+function navSel(el){$$('.navsel').forEach(x=>x.classList.remove('navsel','sel'));if(!el)return;el.classList.add('navsel');if(el.classList.contains('hbtn'))el.classList.add('sel');try{el.focus({preventScroll:false})}catch(e){el.focus()}try{el.scrollIntoView({block:'nearest'})}catch(e){}}
+function navMove(dx,dy){const root=navRoot();if(!root)return false;const items=navItems(root);if(!items.length)return false;
+  let cur=document.activeElement;if(!items.includes(cur))cur=items.find(i=>i.classList.contains('navsel'));
+  if(!cur){navSel(items[0]);return true}
+  if(cur.type==='radio'){const g=[...document.querySelectorAll('input[type=radio][name="'+cur.name+'"]')].filter(r=>!r.closest('[hidden]')),i=g.indexOf(cur),n=g[(i+((dx||dy)>0?1:-1)+g.length)%g.length];
+    if(n){n.checked=true;n.dispatchEvent(new Event('change',{bubbles:true}));navSel(n)}return true}
+  // radios y campos de texto: izquierda/derecha se las quedan ellos
+  if(dx&&cur.tagName==='INPUT'&&(cur.type==='text'||cur.type==='range'))return false;
+  const c=cur.getBoundingClientRect(),cx=c.left+c.width/2,cy=c.top+c.height/2;let best=null,bd=1e9;
+  for(const el of items){if(el===cur)continue;const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,ddx=x-cx,ddy=y-cy;
+    const along=dy?ddy*dy:ddx*dx,across=dy?Math.abs(ddx):Math.abs(ddy);if(along<=4)continue;const d=along+across*2.2;if(d<bd){bd=d;best=el}}
+  if(!best&&dy){const i=items.indexOf(cur);best=items[(i+(dy>0?1:-1)+items.length)%items.length]} // da la vuelta
+  if(best){navSel(best);if(best.type==='radio'){best.checked=true;best.dispatchEvent(new Event('change',{bubbles:true}))}}return !!best}
+function navPick(){const el=document.activeElement;if(!el||el===document.body||!navRoot()||!navRoot().contains(el)&&!el.closest('#menu'))return false;
+  if(el.tagName==='INPUT'&&el.type==='text')return false;if(el.type==='radio'){el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));return false}el.click();return true}
+window.addEventListener('keydown',e=>{if(mode!=='menu'&&mode!=='pause'&&mode!=='results')return;
+  const t=document.activeElement,typing=t&&t.tagName==='INPUT'&&t.type==='text';
+  const k=e.code,dir={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[k]||(!typing&&{KeyW:[0,-1],KeyS:[0,1],KeyA:[-1,0],KeyD:[1,0]}[k]);
+  if(dir){if(typing&&dir[0])return;if(navMove(dir[0],dir[1]))e.preventDefault();return}
+  if(!typing&&(k==='Space'||k==='KeyZ'||(k==='Enter'&&mode!=='menu'))){if(navPick())e.preventDefault()}
+  if(k==='Enter'&&mode==='menu'&&mPage==='hub'){if(navPick())e.preventDefault()}},true);
+// mando: cruceta / stick y botón A en los menús
+let navPadT=0;
+function navPad(gp){if(mode==='play')return;const now=performance.now(),b=i=>gp.buttons[i]&&gp.buttons[i].pressed,ay=gp.axes[1]||0,ax=gp.axes[0]||0;
+  const dy=b(12)||ay<-.6?-1:b(13)||ay>.6?1:0,dx=b(14)||ax<-.6?-1:b(15)||ax>.6?1:0;
+  if((dx||dy)&&now-navPadT>220){navPadT=now;navMove(dy?0:dx,dy)}else if(!dx&&!dy)navPadT=0;
+  const a=b(0);if(a&&!navPad.a){navPick()}navPad.a=a}
+{const _pp=pollPad;pollPad=function(){_pp();try{const pads=navigator.getGamepads?navigator.getGamepads():[];for(const p of pads)if(p&&p.connected){navPad(p);break}}catch(e){}}}
 /* ===== RANKING GENERAL (Firebase Firestore, por su API REST: sin librerías) =====
    Rellena projectId y apiKey con los datos de tu proyecto de Firebase. Vacío = ranking solo en este navegador. */
 const RANK_FB={projectId:'kickass-games',apiKey:'AIzaSyCUilbLmxWSFh07cgiHTBDYdrdGqSn5phc'};
