@@ -3345,7 +3345,7 @@ function drawGoldAura(g){if(!G||!G.ath)return;for(const a of G.ath){if(!(a.gold>
 {const _b=drawBossFloor;drawBossFloor=function(g){_b(g);drawGoldAura(g)}}
 /* ===== NIVEL 2: CORNER COFFEE (en lugar del puesto de camisetas) =====
    Pulsas junto a la barra, la camarera te da un café, te lo bebes: pierdes un 25 % de vida y eres invencible un rato. */
-const COF_INV=12,COF_T=2.4,COF_S=.13,BAR_U=.26;
+const COF_INV=24,COF_T=2.4,COF_S=.13,BAR_U=.26;
 const COFI={};for(const k of ['corner','bar','drink']){const i=new Image();i.src=COF[k];COFI[k]=i}
 const cofOk=k=>COFI[k].complete&&COFI[k].naturalWidth;
 // en el nivel 2 el puesto pasa a ser la cafetería
