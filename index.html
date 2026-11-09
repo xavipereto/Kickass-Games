@@ -3229,7 +3229,7 @@ const WAVES2=[ // solo la élite del Lynx (sin los jueces de la calle)
   {x:3250,e:['e6','e2']},
   {x:3700,e:['e1']}];
 function setLevel(n){G.lvl=n;try{musicTrack(n===2?'box':'main')}catch(e){}WAVES.length=0;WAVES.push(...(n===2?WAVES2:WAVES1));if(n===2){G.vendor=null;G.bought=true;G.shock=[];G.kbs=[];G.pals=[];G.e6dT=null;G.waveI=0;G.lockX=null;G.cam=0;G.en.length=0;G.pick.length=0;G.crates=mkCrates();G.crates.forEach(c=>{if(c.x>=3400)c.items=['db']});
-  G.ath.forEach((a,i)=>{a.x=150-i*40;a.y=272+i*24;a.st='idle';a.carry=null});bigMsg('INTERIOR DEL BOX',1.8)}}
+  G.ath.forEach((a,i)=>{a.x=150-i*40;a.y=272+i*24;a.st='idle';a.carry=null});lvlTitle(2)}}
 function okB(i){return i&&i.complete&&i.naturalWidth}
 function drawBox2BG(g,cam){
   g.fillStyle='#0a0f22';g.fillRect(0,0,W,H);g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
@@ -3381,6 +3381,14 @@ function drawCofAura(g){if(!(G.coffee>0))return;for(const a of G.ath){if(!athUp(
   g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.16+.1*Math.sin(G.run*12);g.fillStyle='#7fe6ff';g.beginPath();g.ellipse(x,y-40,24,44,0,0,7);g.fill();g.restore();
   const w=34,by=y-108;g.fillStyle='rgba(0,0,0,.6)';g.fillRect(x-w/2-1,by-1,w+2,6);g.fillStyle=G.coffee<3&&Math.floor(G.run*6)%2?'#e8fbff':'#7fe6ff';g.fillRect(x-w/2,by,w*G.coffee/COF_INV,4)}}
 {const _b=drawBossFloor;drawBossFloor=function(g){_b(g);drawCofAura(g)}}
+
+/* rótulo con el nombre del nivel al empezarlo */
+function lvlTitle(n){G.lvlT={k:n===2?'g_nivel2':'g_nivel1',alt:n===2?'LYNX SOCIAL TRAINING CLUB':'DE CAMINO AL LYNX',t:0};(G.lvlShown=G.lvlShown||{})[n]=1}
+{const _u=updStreet;updStreet=function(dt){if(G&&G.phase==='street'&&!G.tut&&!G.talk&&!(G.lvlShown&&G.lvlShown[G.lvl||1])&&(G.lvl||1)===1)lvlTitle(1);if(G&&G.lvlT){G.lvlT.t+=dt;if(G.lvlT.t>2.6)G.lvlT=null}_u(dt)}}
+{const _d=draw;draw=function(){_d();const L=G&&G.lvlT;if(!L||mode!=='play')return;ctx.setTransform(K,0,0,K,0,0);const t=L.t,a=clamp(Math.min(t/.25,(2.6-t)/.4),0,1),sc=t<.25?.7+.3*t/.25+.08*Math.sin(t/.25*Math.PI):1;
+  ctx.save();ctx.globalAlpha=a*.45;ctx.fillStyle='#000';ctx.fillRect(0,H*.36,W,H*.22);ctx.restore();
+  ctx.save();ctx.globalAlpha=a;if(!drawTxt(ctx,L.k,W/2,H*.47,30,a,sc))T(ctx,L.alt,W/2,H*.47,F_D(20),'#ffd23f','center','#14060f');
+  ctx.globalAlpha=a*.9;T(ctx,G.lvl===2?'NIVEL 2':'NIVEL 1',W/2,H*.47-28,F_D(11),'#7fe6ff','center','#04101a');ctx.restore()}}
 
 /* Enlace de inscripciones: pon aquí la URL cuando esté lista (vacío = botón oculto) */
 const INSCRIPCION_URL='';
@@ -3754,7 +3762,7 @@ function initUI(){
 }
 function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
-  window.__nrb={mkJudge,spawnWave,mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
+  window.__nrb={mkJudge,spawnWave,startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1800))]).then(init);
