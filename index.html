@@ -2220,7 +2220,7 @@ function mirHit(m){if(m.hits>=MIR_HITS)return;m.hits++;m.flash=.12;m.shake=.2;G.
   if(m.hits>=MIR_HITS){m.st='dying';m.t=0;G.shake=.45;G.flash=.25;SFX.boom();burst(m.x,m.y-70,30,'#cfe8ff',300);bigMsg('¡ESPEJO ROTO!',1.4);G.kills++;G.score+=500;photoCharge(20);
     (G.mirFx=G.mirFx||[]).push({x:m.x,y:m.y,t:0});
     for(const c of G.en)if(c.type==='e1'&&c.clone){c.st='dying';c.t=0;c.poof=1;c.vx=0;burst(c.x,c.y-50,24,'#9fd8ff',240)}
-    const b=m.boss;if(b){b.st=b.st==='ego'?'walk':b.st;e1Say(b,'¡NOOO! ¡MI REFLEJO!')}}}
+    const b=m.boss;if(b){b.egoDone=true;b.cloned=1;b.st=b.st==='ego'?'walk':b.st;e1Say(b,'¡NOOO! ¡MI REFLEJO!')}}}
 {const _h=hurtE;hurtE=function(e,dmg,dir,kd,kb){
   if(e.type==='mirror'){if(e.st==='mir')mirHit(e);return}
   if(e.type==='e1'){
@@ -2232,7 +2232,7 @@ function mirHit(m){if(m.hits>=MIR_HITS)return;m.hits++;m.flash=.12;m.shake=.2;G.
   }
   return _h(e,dmg,dir,kd,kb)}}
 {const _b=bossCap;bossCap=function(e,dmg){if(e.type==='e1'){if(e.clone||e1Mirror())return 0;const cap=e.egoDone?0:Math.ceil(e.maxHp/3);return Math.max(0,Math.min(dmg,e.hp-cap))}return _b(e,dmg)}}
-{const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='e1'&&!e.clone){for(const o of G.en)if(o!==e&&(o.type==='mirror'||o.type==='e1')){o.st='dying';o.t=0;o.poof=1}G.mirFx=[];bigMsg('¡NARCISUS HA CAÍDO!',2)}}}
+{const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='e1'&&!e.clone){for(const o of G.en)if(o!==e&&(o.type==='mirror'||o.type==='e1')){o.st='dying';o.t=0;o.poof=1}G.mirFx=[];bigMsg('¡NARCISUS HA CAÍDO!',2);G.e1Down=1}}}
 function updE1Extra(dt){for(const e of G.en)if(e.type==='e1'){if(e.st==='grabbed'||e.st==='kicked')e.kas=1;else if(e.st==='walk'||E1_AI.has(e.st))e.kas=0}
 for(const m of G.en)if(m.type==='mirror'){if(m.hx==null){m.hx=m.x;m.hy=m.y}m.x=m.hx;m.y=m.hy;m.vx=m.vy=0}
 if(G.mirFx)for(const f of G.mirFx)f.t+=dt;for(const e of G.en){if(e.invT>0)e.invT-=dt;if(e.type==='mirror'){e.t+=dt;if(e.shake>0)e.shake-=dt;if(e.st==='dying'&&e.t>.45)e.dead=true}}}
@@ -2290,9 +2290,13 @@ function drawE1Floor(g){if(G.mirFx)for(const f of G.mirFx){const fr=E1A.fr.mir[7
     g.fillStyle=on?'rgba(255,200,60,'+a+')':'rgba(255,60,40,'+a+')';g.fillRect(Math.min(x0,x1),e.y-GZ_LANE,Math.abs(x1-x0),GZ_LANE*2);
     if(!on){g.strokeStyle='rgba(255,90,60,'+(.35+.3*Math.sin(G.run*20))+')';g.lineWidth=1;g.setLineDash([6,6]);g.beginPath();g.moveTo(x0+e.face*E1A.eyex,e.y-E1A.eye);g.lineTo(x1,e.y-E1A.eye);g.stroke();g.setLineDash([])}}}
 {const _d=drawElite;drawElite=function(g,e){if(e.type==='e1'||e.type==='mirror')return drawE1(g,e);_d(g,e)}}
+
+// derrotado: cuando acaba de caer, habla
+{const _u=updStreet;updStreet=function(dt){_u(dt);if(!G||G.talk||(G.talked&&G.talked.e1d))return;
+  if(G.e1dT==null){if(G.e1Down)G.e1dT=0}else if((G.e1dT+=dt)>=1.2)startTalk('e1d')}}
 /* ===== RETRATOS CON DIÁLOGO (antes de que entre un jefe) =====
    La acción se congela, el busto entra por arriba a la derecha y habla; se cierra solo o al pulsar. */
-const PORT_ALIAS={e1du:'e1',e1ego:'e1'};const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
+const PORT_ALIAS={e1du:'e1',e1ego:'e1',e1d:'e1'};const portKey=w=>PORTRAITS[w]?w:(PORT_ALIAS[w]||w);/* e1d usa el retrato normal hasta que haya uno de derrotado */const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
 const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio de la pista molestando… Otra vez teniendo que saltar obstáculos. ¡Estos se van a enterar!']},
   e6:{name:'JORDI EL MONTADOR',pages:[{by:'part',txt:'Disculpa, ¿nos dejas pasar? Tenemos que llegar a esa puerta.'},
     '¡Ya están estos tocándome las narices! Yo estoy aquí negro de currar, nadie me ayuda, estoy cansado y estos vienen aquí con preguntitas.',
@@ -2302,19 +2306,22 @@ const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio
   e6d:{name:'JORDI EL MONTADOR',pages:['Muchas gracias, me siento más relajado. Me hacían falta unos golpes de realidad: la vida es más que esto.',
     'Ahora me siento en paz y solo siento amor en mi corazón.',
     'Seguid por la derecha y encontraréis la puerta que buscáis. Namaste, os amo.']},
-  e1:{name:'NARCISUS EL PERFECTO',pages:['¿Dónde vais, pequeños pringados?',
+  e1:{name:'NARCISUS EL PERFECTO',pages:['¿Os ha dejado pasar Jordi? Tendré que hablar con él…','¿Dónde vais, pequeños pringados?',
     {by:'part',txt:'Necesitamos llegar a esa puerta del final. Déjanos pasar, por favor.'},
     'No entiendo cómo un grupito como vosotros, que entra en un box tan legendario como este, no es capaz de admirar al puto amo de este box. Ni siquiera me habéis mirado. ¡¿No sabéis quién soy?!',
     {by:'lead',txt:'Pues no, ni idea.'},
     'No puedo soportar más que vengan novatos a diario y no sepan apreciar mi virtuoso cuerpo y técnica perfecta. Deberían mirarme y apreciarme con respeto.',
+    'Además, tras esa puerta está la inscripción a la KickAss Games. Solo los mejores del Lynx se apuntan… y el mejor soy yo.',
     '¡Os fulminaré con mi súper mirada de superioridad!']},
   e1ego:{name:'NARCISUS EL PERFECTO',pages:['No puedo creer que estéis despreciando tanta belleza.',
-    'He perfeccionado tanto el acto de quererme que mi ego se ha personificado.',
+    'He perfeccionado tanto el arte de quererme que mi ego se ha personificado.',
+    {by:'lead',txt:'¿Narciso? ¿Le has puesto nombre a tu reflejo?'},
     '¡Vamos, Narciso, demos a estos una lección de belleza y musculatura perfectas!']},
+  e1d:{name:'NARCISUS EL PERFECTO',pages:['Llevaba años mirándome… y nunca había visto a nadie más.','Id, la puerta es vuestra.','Pero apuntadme a mí también, que ya lo tengo todo…']},
   e1du:{name:'NARCISUS EL PERFECTO',pages:['¡Os vais a enterar! Vais a ver mis DU de técnica perfecta. Soy el único capaz de hacer 200 saltos seguidos, nadie me ha superado jamás.',
     '¡Ahora me admiraréis a latigazos!']},
   chief:{name:'SPEAKER',pages:['¡Sube ese volumen! Habéis llegado lejos… ¡Pero aquí el que manda en la pista soy yo!','Si creéis que sois capaces de venir a la KickAss Games, tenéis que pasar por las peores pesadillas de una competición: ¡lluvia y sol intenso!','¡Aquí tenéis mi level WOD particular, novatos!']}};
-function startTalk(who){if(!PORTRAITS[PORT_ALIAS[who]||who]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
+function startTalk(who){if(!PORTRAITS[portKey(who)]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
 const TALK_CPS=34; // letras por segundo
 const pgTxt=pg=>typeof pg==='string'?pg:pg.txt,pgBy=pg=>typeof pg==='string'?null:pg.by;
 // retrato del atleta que habla: PORTRAITS[<sprite del atleta>] cuando exista (atl_bar, atl_f, atl_dumb, atl_ball)
@@ -2325,7 +2332,7 @@ function updTalk(dt){const k=G.talk;k.t+=dt;const T=TALKS[k.who],txt=pgTxt(T.pag
   if(k.out>=0){k.out+=dt;if(k.out>=.35){G.talk=null;musicDuck(1,10)}}
   updFx(dt)}
 function drawTalk(g){const k=G.talk;if(!k)return;const T0=TALKS[k.who],pg=T0.pages[k.pg],by=pgBy(pg),prev=k.pg>0?pgBy(T0.pages[k.pg-1]):undefined;
-  const ath=by?talkAth(by):null,key=by?(ath&&(ath.pal&&ath.pal.spr||ath.spr)):(PORT_ALIAS[k.who]||k.who),P=PORTRAITS[key],img=PORT_IMG[key],left=!!by;
+  const ath=by?talkAth(by):null,key=by?(ath&&(ath.pal&&ath.pal.spr||ath.spr)):portKey(k.who),P=PORTRAITS[key],img=PORT_IMG[key],left=!!by;
   const T={name:by?'':T0.name,txt:pgTxt(pg)},first=k.pg===0||prev!==by;
   const inK=first?Math.min(1,k.t/.3):1,outK=k.out>=0?Math.min(1,k.out/.35):0,slide=(1-inK)+outK,ph=P?P.h:150,pw=P?P.w:0;
   g.save();g.globalAlpha=.55*(1-outK)*(k.pg===0?inK:1);g.fillStyle='#000';g.fillRect(0,0,W,H);g.restore(); // oscurece el fondo
