@@ -357,6 +357,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
 .nbtn.gnav:hover{transform:scale(1.07)}
 .ptitle img.wimg.ttl{height:clamp(30px,7vh,58px)}
 .hbtn img.wimg{height:clamp(30px,8vh,60px)}
+.lvlpick .hbtn{display:flex;flex-direction:column;align-items:center;gap:2px}.lvlpick .hbtn small{font:600 12px/1 system-ui,sans-serif;letter-spacing:.06em;opacity:.8;text-transform:uppercase}
 /* jerarquía del menú principal: JUGAR grande y el resto cada vez más pequeño */
 #hubNet img.wimg{height:clamp(30px,8vh,60px)}
 .netbox{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:460px;margin:0 auto}
@@ -475,12 +476,29 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
       <!-- HUB -->
       <section class="mp" data-p="hub">
         <nav class="hub">
-          <button class="hbtn big" type="button" data-go="s1" id="hubPlay"></button>
+          <button class="hbtn big" type="button" data-go="mode" id="hubPlay"></button>
           <button class="hbtn" type="button" data-go="net" id="hubNet"><span class="gtxt">ONLINE</span></button>
           <button class="hbtn" type="button" data-go="rank" id="hubRank"></button>
           <button class="hbtn" type="button" data-go="cfg" id="hubCfg"><span class="gtxt">CONFIGURACIÓN</span></button>
           <button type="button" class="instbtn inhub" hidden>📲 INSTALAR</button>
         </nav>
+      </section>
+
+      <!-- JUGAR → modo historia o elegir nivel -->
+      <section class="mp" data-p="mode" hidden>
+        <nav class="hub">
+          <button class="hbtn big" type="button" id="modeStory"><span class="gtxt">MODO HISTORIA</span></button>
+          <button class="hbtn" type="button" data-go="lvl" id="modeLvl"><span class="gtxt">ELEGIR NIVEL</span></button>
+        </nav>
+        <div class="mnav"><button type="button" class="nbtn" data-go="hub">&#9664; VOLVER</button></div>
+      </section>
+      <section class="mp" data-p="lvl" hidden>
+        <nav class="hub lvlpick">
+          <button class="hbtn" type="button" data-lvl="1"><span class="gtxt">NIVEL 1</span><small>La calle</small></button>
+          <button class="hbtn" type="button" data-lvl="2"><span class="gtxt">NIVEL 2</span><small>El box</small></button>
+          <button class="hbtn" type="button" data-lvl="F"><span class="gtxt">FINAL</span><small>El WOD</small></button>
+        </nav>
+        <div class="mnav"><button type="button" class="nbtn" data-go="mode">&#9664; VOLVER</button></div>
       </section>
 
       <!-- ONLINE: cooperativo entre dos móviles -->
@@ -2813,7 +2831,7 @@ function applyUI(){
   const AR='<img class="arr" alt="" src="'+U.arrow+'">';
   $('#mNext').innerHTML=W_('m_sig','Siguiente','nav')+AR;$('#mNext').classList.add('gnav');
   $('#mBack').classList.add('gnav');
-  $$('#menu .mnav [data-go="hub"],#menu .mnav [data-go="cfg"]').forEach(b=>{b.innerHTML='<img class="arr back" alt="" src="'+U.arrow+'">'+W_('g_volver','Volver','nav');b.classList.add('gnav')});
+  $$('#menu .mnav [data-go="hub"],#menu .mnav [data-go="cfg"],#menu .mnav [data-go="mode"]').forEach(b=>{b.innerHTML='<img class="arr back" alt="" src="'+U.arrow+'">'+W_('g_volver','Volver','nav');b.classList.add('gnav')});
 }
 function introShow(i){
   const P=$$('#intro .pn'),cap=$('#intro .cap');clearTimeout(introT);
@@ -2865,7 +2883,7 @@ function fillCtrlPage(){const T=app.classList.contains('touch'),cards=$$('#menu 
 function menuNext(){const si=MSTEPS.indexOf(mPage);if(si<0)return;
   if(si===0){const n=$('#team').value.replace(/\s+/g,' ').trim();if(n.length<2){$('#teamErr').textContent='El nombre del equipo necesita al menos 2 caracteres.';$('#team').focus();return}}
   if(si<MSTEPS.length-1)menuGo(MSTEPS[si+1]);else $('#form').requestSubmit?$('#form').requestSubmit():$('#play').click()}
-function menuBack(){const si=MSTEPS.indexOf(mPage);menuGo(si>0?MSTEPS[si-1]:'hub')}
+function menuBack(){const si=MSTEPS.indexOf(mPage);menuGo(si>0?MSTEPS[si-1]:(typeof PLAY!=='undefined'&&PLAY.from)||'hub')}
 /* ----- pantalla de derrota estilo lucha (retrato + frase) ----- */
 const DEFEAT={
   X:[['atl_bar','Los jueces son demasiado buenos…','sad_bar'],['atl_f','No he podido comerme ni una sola rep…','cry_f']],
@@ -3175,7 +3193,9 @@ function netInitUI(){
 }
 {const _ini=init;init=function(...a){const r=_ini.apply(this,a);try{netInitUI()}catch(e){console.error(e)}return r}}
 /* ===== NIVEL 2: INTERIOR DEL BOX (en preparación: oculto; se prueba con #nivel2) ===== */
-const LVL2_ON=false; // true = entra en el recorrido normal (calle → box → WOD)
+const LVL2_ON=false; // (ya no se usa: el modo de juego lo decide)
+const PLAY={mode:'story',start:'1',from:'mode'}; // story = calle → box → WOD · lvl = un nivel suelto y luego el WOD
+const lvl2On=()=>PLAY.mode==='story';
 const B2={};(function(){const ld=s=>{const i=new Image();i.src=s;return i};B2.wall=ld(BOX2.wall[0]);B2.floor=ld(BOX2.floor[0]);B2.p={};for(const k in BOX2.props)B2.p[k]=ld(BOX2.props[k][0])})();
 // material contra la pared [pieza, x]; el reloj va colgado
 const B2_PROPS=[['plates',260],['kbs',520],['rower',760],['rower',820],['plyo',1010],['bike',1250],['bike',1320],['balls',1560],['chalk',1610],['table',1880],['plates',2160],['rower',2420],['rower',2480],['kbs',2740],['plyo',2990],['bike',3240],['balls',3480],['chalk',3530],['table',3760],['kbs',4000]];
@@ -3207,7 +3227,7 @@ function drawBox2BG(g,cam){
 {const _bg=drawStreetBG;drawStreetBG=function(g,cam){if(G&&G.lvl===2)return drawBox2BG(g,cam);_bg(g,cam)}}
 {const _ng=newGame;newGame=function(o){_ng(o);setLevel(1)}}
 // paso de la calle al box (solo cuando el nivel esté activado) y entrada de pruebas #nivel2
-{const _eb=enterBox;enterBox=function(){if(LVL2_ON&&G.lvl!==2){G.phase='fade2';G.fade=0;return}_eb()}}
+{const _eb=enterBox;enterBox=function(){if(lvl2On()&&G.lvl!==2){G.phase='fade2';G.fade=0;return}_eb()}}
 {const _up=update;update=function(dt){if(G&&G.phase==='fade2'){G.fade+=dt/.7;updFx(dt);G.ath[0].st='walk';G.ath[0].ph+=dt*9;G.ath[0].x+=dt*40;if(G.fade>=1){G.phase='street';cut2Play(()=>setLevel(2))}return}_up(dt)}}
 {const _dr=draw;draw=function(){_dr();if(G&&G.phase==='fade2'){ctx.setTransform(K,0,0,K,0,0);ctx.fillStyle='rgba(0,0,0,'+clamp(G.fade,0,1)+')';ctx.fillRect(0,0,W,H)}}}
 {const _sg=startGame;startGame=function(o){_sg(o);if(G&&/nivel2/.test(location.hash)&&!(NET.role==='guest')){G.tut=null;if(/nocut/.test(location.hash))setLevel(2);else cut2Play(()=>setLevel(2))}}}
@@ -3225,6 +3245,19 @@ function cut2Play(done){const el=$('#cut2');cut2Done=done;el.querySelectorAll('.
   mode='cut';clearKeys();el.hidden=false;musicDuck(.08,20000);introMusicLoad().then(()=>{if(mode==='cut')introMusicPlay()});cut2Show(0);gcEv('escena-box','Escena entrada al box')}
 {const el=$('#cut2');el.addEventListener('click',e=>{if(mode!=='cut')return;audio();if(e.target.closest&&e.target.closest('.skip'))cut2End();else cut2Show(cut2I+1)});
   window.addEventListener('keydown',e=>{if(mode!=='cut')return;e.preventDefault();e.stopPropagation();if(e.code==='Escape')cut2End();else cut2Show(cut2I+1)},true)}
+/* ===== MODOS DE JUEGO: historia (nivel 1 → nivel 2 → final) o elegir nivel ===== */
+{$('#modeStory').addEventListener('click',()=>{PLAY.mode='story';PLAY.start='1';PLAY.from='mode';menuGo('s1')});
+ $$('#menu [data-lvl]').forEach(b=>b.addEventListener('click',()=>{PLAY.mode='lvl';PLAY.start=b.dataset.lvl;PLAY.from='lvl';menuGo('s1')}))}
+{const _sg=startGame;startGame=function(o){_sg(o);if(!G||NET.role==='guest'||/nivel2/.test(location.hash))return;
+  if(PLAY.mode!=='lvl'||PLAY.start==='1')return;
+  G.tut=null;
+  if(PLAY.start==='2'){cut2Play(()=>setLevel(2))}
+  else if(PLAY.start==='F'){startWod()}}}
+// solo el modo historia cuenta para el ranking
+{const _s=submitScore;submitScore=async function(rec){if(PLAY.mode==='story')return _s(rec);const m=$('#rSave');if(m)m.textContent='Partida de nivel suelto: no cuenta para el ranking (juega el modo historia).'}}
+// rótulos con letras de ChatGPT cuando existan (si no, texto)
+for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_elegir','Elegir nivel'],['[data-lvl="1"] .gtxt','g_nivel1','Nivel 1'],['[data-lvl="2"] .gtxt','g_nivel2','Nivel 2'],['[data-lvl="F"] .gtxt','g_final','Final']]){
+  const el=$('#menu '+s);if(el&&TXT_IMG[k]){if(el.tagName==='BUTTON'){el.innerHTML=W_(k,alt);el.setAttribute('aria-label',alt)}else el.outerHTML=W_(k,alt)}}
 
 /* Enlace de inscripciones: pon aquí la URL cuando esté lista (vacío = botón oculto) */
 const INSCRIPCION_URL='';
@@ -3598,7 +3631,7 @@ function initUI(){
 }
 function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
-  window.__nrb={mkJudge,spawnWave,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
+  window.__nrb={mkJudge,spawnWave,enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1800))]).then(init);
