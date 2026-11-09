@@ -3290,6 +3290,14 @@ function lose2Talk(){const up=G.en.filter(e=>!e.dead&&e.st!=='dying'),A=G.ath[0]
   _f(kind)}}
 {const _sg=startGame;startGame=function(o){_sg(o);if(G&&G.ath)G.athOrig=G.ath.slice()}}
 {const _b=drawBubble;drawBubble=function(...a){if(G&&G.talk&&G.talk.who==='lose2')return;return _b(...a)}}
+// los enemigos no se esconden detrás de los bordes: una vez han entrado en pantalla no pueden volver a salir
+const EDGE_M=30,EDGE_FREE={rower:1};
+function edgeKeep(){if(!G||G.phase!=='street')return;const L=G.cam+EDGE_M,R=G.cam+W-EDGE_M;
+  for(const e of G.en){if(e.dead||e.st==='dying'||EDGE_FREE[e.type]||e.type==='mirror')continue;
+    if(e.type==='e6'&&e.st!=='walk'&&e.st!=='hb'&&!/hurt|stun|down|kdown|getup|kicked|grabbed/.test(e.st))continue; // Jordi sale a por las transpaletas
+    if(!e.inView){e.outT=(e.outT||0)+1/60;if(e.x>L&&e.x<R||(G.lockX!=null&&e.outT>2.5))e.inView=1;else continue} // si tarda en entrar, se le mete
+    if(e.x<L){e.x=L;if(e.vx<0)e.vx=0}else if(e.x>R){e.x=R;if(e.vx>0)e.vx=0}}}
+{const _u=updStreet;updStreet=function(dt){_u(dt);edgeKeep()}}
 
 /* Enlace de inscripciones: pon aquí la URL cuando esté lista (vacío = botón oculto) */
 const INSCRIPCION_URL='';
