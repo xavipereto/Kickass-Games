@@ -2172,6 +2172,7 @@ const e1Mirror=()=>G.en.find(m=>m.type==='mirror'&&!m.dead&&m.st!=='dying');
 function e1Say(e,txt){e.shoutTxt=txt;e.shout=1.6}
 function e1Next(e){const ph=e1Phase(e);
   if(!e.clone&&ph===3&&!e.egoDone){e.st='egoGo';e.t=0;e1Say(e,'¡MIRAD QUÉ CUERPAZO!');return}
+  if(!e.clone&&ph===2)startTalk('e1du');
   const du=ph===2||(ph===3&&Math.random()<.5);e.want=du?'du':'gz'}
 function e1DropDb(){if(G.ath.some(a=>a.carry==='db')||G.pick.some(p=>p.type==='db'))return;
   const x=G.cam+rr(140,W-140);G.pick.push({kind:'pick',type:'db',x,y:rr(FY0+10,FY1-8),t:0,pz:120,pvz:0,pvx:0});ftext(x,FY0-10,'¡DUMBBELL!','#4fe3df',11)}
@@ -2291,7 +2292,7 @@ function drawE1Floor(g){if(G.mirFx)for(const f of G.mirFx){const fr=E1A.fr.mir[7
 {const _d=drawElite;drawElite=function(g,e){if(e.type==='e1'||e.type==='mirror')return drawE1(g,e);_d(g,e)}}
 /* ===== RETRATOS CON DIÁLOGO (antes de que entre un jefe) =====
    La acción se congela, el busto entra por arriba a la derecha y habla; se cierra solo o al pulsar. */
-const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
+const PORT_ALIAS={e1du:'e1'};const PORT_IMG={};for(const k in PORTRAITS){const i=new Image();i.src=PORTRAITS[k].img;PORT_IMG[k]=i}
 const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio de la pista molestando… Otra vez teniendo que saltar obstáculos. ¡Estos se van a enterar!']},
   e6:{name:'JORDI EL MONTADOR',pages:[{by:'part',txt:'Disculpa, ¿nos dejas pasar? Tenemos que llegar a esa puerta.'},
     '¡Ya están estos tocándome las narices! Yo estoy aquí negro de currar, nadie me ayuda, estoy cansado y estos vienen aquí con preguntitas.',
@@ -2307,8 +2308,10 @@ const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio
     {by:'lead',txt:'Pues no, ni idea.'},
     'No puedo soportar más que vengan novatos a diario y no sepan apreciar mi virtuoso cuerpo y técnica perfecta. Deberían mirarme y apreciarme con respeto.',
     '¡Os fulminaré con mi súper mirada de superioridad!']},
+  e1du:{name:'EL LÍDER',pages:['¡Os vais a enterar! Vais a ver mis DU de técnica perfecta. Soy el único capaz de hacer 200 saltos seguidos, nadie me ha superado jamás.',
+    '¡Ahora me admiraréis a latigazos!']},
   chief:{name:'SPEAKER',pages:['¡Sube ese volumen! Habéis llegado lejos… ¡Pero aquí el que manda en la pista soy yo!','Si creéis que sois capaces de venir a la KickAss Games, tenéis que pasar por las peores pesadillas de una competición: ¡lluvia y sol intenso!','¡Aquí tenéis mi level WOD particular, novatos!']}};
-function startTalk(who){if(!PORTRAITS[who]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
+function startTalk(who){if(!PORTRAITS[PORT_ALIAS[who]||who]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
 const TALK_CPS=34; // letras por segundo
 const pgTxt=pg=>typeof pg==='string'?pg:pg.txt,pgBy=pg=>typeof pg==='string'?null:pg.by;
 // retrato del atleta que habla: PORTRAITS[<sprite del atleta>] cuando exista (atl_bar, atl_f, atl_dumb, atl_ball)
@@ -2319,7 +2322,7 @@ function updTalk(dt){const k=G.talk;k.t+=dt;const T=TALKS[k.who],txt=pgTxt(T.pag
   if(k.out>=0){k.out+=dt;if(k.out>=.35){G.talk=null;musicDuck(1,10)}}
   updFx(dt)}
 function drawTalk(g){const k=G.talk;if(!k)return;const T0=TALKS[k.who],pg=T0.pages[k.pg],by=pgBy(pg),prev=k.pg>0?pgBy(T0.pages[k.pg-1]):undefined;
-  const ath=by?talkAth(by):null,key=by?(ath&&(ath.pal&&ath.pal.spr||ath.spr)):k.who,P=PORTRAITS[key],img=PORT_IMG[key],left=!!by;
+  const ath=by?talkAth(by):null,key=by?(ath&&(ath.pal&&ath.pal.spr||ath.spr)):(PORT_ALIAS[k.who]||k.who),P=PORTRAITS[key],img=PORT_IMG[key],left=!!by;
   const T={name:by?'':T0.name,txt:pgTxt(pg)},first=k.pg===0||prev!==by;
   const inK=first?Math.min(1,k.t/.3):1,outK=k.out>=0?Math.min(1,k.out/.35):0,slide=(1-inK)+outK,ph=P?P.h:150,pw=P?P.w:0;
   g.save();g.globalAlpha=.55*(1-outK)*(k.pg===0?inK:1);g.fillStyle='#000';g.fillRect(0,0,W,H);g.restore(); // oscurece el fondo
