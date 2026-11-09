@@ -3425,6 +3425,13 @@ const DEFEAT_L2={
   F:[['atl_ball','¡Ni nos dejaron calentar! ¿Has visto cómo nos miraban?','angry_ball'],['atl_f','La próxima vez me pido un café antes de entrar…','cry_f']],
   M:[['atl_bar','Esos de la élite no son humanos…','angry_bar'],['atl_dumb','¡Te dije que había que entrenar los double unders! ¿Eh?','rage_dumb']]};
 {const _s=showDefeat;showDefeat=function(next){if(G&&G.lvl===2){const k=G.o.pair in DEFEAT?G.o.pair:'X',old=DEFEAT[k];DEFEAT[k]=DEFEAT_L2[k]||DEFEAT_L2.X;try{_s(next)}finally{DEFEAT[k]=old}}else _s(next)}}
+// voces de la élite (nivel 2): quejido al recibir y grito al caer, como los jueces del nivel 1
+const ELITE_FEM={e3:1,e4:1};
+function eliteVoice(e,kill){if(!/^(e[1-5])$/.test(e.type)||e.clone&&!kill)return;const f=ELITE_FEM[e.type];
+  if(kill){smpPlay(f?'auf':'ko',1,f?.92:rr(.92,1.02))||SFX.hit();return}
+  if(G.run-(e.ouchT||-9)<.55)return;e.ouchT=G.run;smpPlay(f?'auf':'aum',.85,rr(.85,.95))}
+{const _h=hurtE;hurtE=function(e,dmg,dir,kd,kb){const hp=e.hp,r=_h(e,dmg,dir,kd,kb);if(e.hp<hp&&e.hp>0&&e.st!=='dying')eliteVoice(e,false);return r}}
+{const _k=killE;killE=function(e,dir){if(!e.vk){e.vk=1;eliteVoice(e,true)}return _k(e,dir)}}
 
 /* Enlace de inscripciones: pon aquí la URL cuando esté lista (vacío = botón oculto) */
 const INSCRIPCION_URL='';
