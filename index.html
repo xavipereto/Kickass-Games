@@ -358,6 +358,11 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
 .ptitle img.wimg.ttl{height:clamp(30px,7vh,58px)}
 .hbtn img.wimg{height:clamp(30px,8vh,60px)}
 .lvlpick .hbtn{display:flex;flex-direction:column;align-items:center;gap:2px}.lvlpick .hbtn small{font:600 12px/1 system-ui,sans-serif;letter-spacing:.06em;opacity:.8;text-transform:uppercase}
+.rktabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:2px 0 8px}
+.rktabs button{font:700 13px/1 system-ui,sans-serif;letter-spacing:.06em;padding:8px 12px;border-radius:999px;border:2px solid #ffd23f55;background:#0d0f24cc;color:#ffd23f;cursor:pointer}
+.rktabs button.on{background:#ffd23f;color:#140a06;border-color:#ffd23f}
+.rktabs button:focus-visible{outline:3px solid #7fe6ff;outline-offset:2px}
+#rkResMode{display:block;font:700 12px/1.2 system-ui,sans-serif;letter-spacing:.08em;color:#7fe6ff;margin:2px 0 6px;text-align:center}
 /* jerarquía del menú principal: JUGAR grande y el resto cada vez más pequeño */
 #hubNet img.wimg{height:clamp(30px,8vh,60px)}
 .netbox{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;max-width:460px;margin:0 auto}
@@ -577,6 +582,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
       <!-- RANKING -->
       <section class="mp" data-p="rank" hidden>
         <div class="ptitle"><span class="gtxt" id="rkT">LA PIZARRA</span><span id="rkChip" class="chip">Cargando</span></div>
+        <div id="rkTabs" class="rktabs"><button type="button" data-t="story">HISTORIA</button><button type="button" data-t="n1">NIVEL 1</button><button type="button" data-t="n2">NIVEL 2</button><button type="button" data-t="final">FINAL</button></div>
         <div class="pbody card scrollin"><ol id="rkMenu" class="rank"></ol></div>
         <div class="mnav"><button type="button" class="nbtn" data-go="hub">&#9664; VOLVER</button></div>
       </section>
@@ -643,7 +649,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
       <div class="cols">
         <section class="card" aria-labelledby="rkT2">
           <div class="rk-head"><h2 id="rkT2">RANKING</h2><span id="rkChip2" class="chip">Cargando</span></div>
-          <ol id="rkRes" class="rank"></ol>
+          <span id="rkResMode"></span><ol id="rkRes" class="rank"></ol>
           <p id="rSave" class="savemsg"></p>
         </section>
         <section class="card" style="display:grid;gap:12px;align-content:start">
@@ -998,10 +1004,11 @@ const LKEY='nrb_scores_v1';
 function localRows(){try{return JSON.parse(localStorage.getItem(LKEY)||'[]')}catch(e){return[]}}
 function saveLocal(rec){try{const a=localRows();a.push(rec);a.sort(cmpRec);localStorage.setItem(LKEY,JSON.stringify(a.slice(0,40)))}catch(e){}}
 function cmpRec(a,b){return (b.score-a.score)||(a.time-b.time)}
-function shownRows(){return(RK.mode==='shared'?RK.rows:localRows()).slice().sort(cmpRec).slice(0,10)}
+const RK_TABS=[['story','HISTORIA'],['n1','NIVEL 1'],['n2','NIVEL 2'],['final','FINAL']];let rkTab='story';
+function shownRows(tab){tab=tab||rkTab;return(RK.mode==='shared'?RK.rows:localRows()).filter(r=>(r.mode||'story')===tab).sort(cmpRec).slice(0,10)}
 const PAIRN={M:'Masculina',F:'Femenina',X:'Mixta'};
-function renderRank(ol,meKey){
-  const rows=shownRows();ol.textContent='';
+function renderRank(ol,meKey,tab){
+  const rows=shownRows(tab);ol.textContent='';
   if(!rows.length){const li=document.createElement('li');li.style.gridTemplateColumns='1fr';li.className='empty';li.textContent=RK.mode==='loading'?'Cargando ranking…':'Aún no hay puntuaciones. ¡Sé el primero!';ol.appendChild(li);return}
   rows.forEach((r,i)=>{const li=document.createElement('li');if(meKey&&r.key===meKey)li.className='me';
     const b=document.createElement('b');b.textContent=i+1;
@@ -1009,7 +1016,8 @@ function renderRank(ol,meKey){
     const em=document.createElement('em');em.textContent=fmtN(r.score||0);li.append(b,tn,em);ol.appendChild(li)});
 }
 function chipUpdate(){[$('#rkChip'),$('#rkChip2')].forEach(c=>{c.className='chip'+(RK.mode==='shared'?' ok':RK.mode==='local'?' loc':'');c.textContent=RK.mode==='shared'?'General':RK.mode==='local'?'Solo este navegador':'Cargando'})}
-function refreshRank(){chipUpdate();renderRank($('#rkMenu'),null);renderRank($('#rkRes'),G&&G.rkKey)}
+function refreshRank(){chipUpdate();rkTabsUI();renderRank($('#rkMenu'),null);renderRank($('#rkRes'),G&&G.rkKey,G&&G.final&&G.final.mode)}
+function rkTabsUI(){const w=$('#rkTabs');if(!w)return;w.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.t===rkTab))}
 async function initRanking(){
   try{
     if(!(window.claude&&claude.use)){RK.mode='local';return refreshRank()}
@@ -3024,18 +3032,20 @@ const FB_ON=()=>!!(RANK_FB.projectId&&RANK_FB.apiKey);
 const fbURL=p=>'https://firestore.googleapis.com/v1/projects/'+RANK_FB.projectId+'/databases/(default)/documents'+p+(p.includes('?')?'&':'?')+'key='+RANK_FB.apiKey;
 function fbVal(v){if(!v)return null;if('stringValue' in v)return v.stringValue;if('integerValue' in v)return +v.integerValue;if('doubleValue' in v)return +v.doubleValue;if('booleanValue' in v)return v.booleanValue;return null}
 async function fbLoad(){
-  const body={structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:200}};
+  const body={structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:600}};
   const r=await fetch(fbURL(':runQuery'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status);
   const a=await r.json(),rows=[];
   for(const x of a){const d=x.document;if(!d)continue;const f=d.fields||{},g=k=>fbVal(f[k]);
-    rows.push({key:d.name.split('/').pop(),team:String(g('team')||''),pair:g('pair'),cat:g('cat'),score:+g('score')||0,time:+g('time')||0,noRep:+g('noRep')||0,done:!!g('done'),at:+g('at')||0})}
+    rows.push({key:d.name.split('/').pop(),team:String(g('team')||''),pair:g('pair'),cat:g('cat'),score:+g('score')||0,time:+g('time')||0,noRep:+g('noRep')||0,done:!!g('done'),mode:g('mode')||'story',at:+g('at')||0})}
   // una línea por equipo + pareja + categoría: su mejor marca
-  const best=new Map();for(const r of rows){const k=(r.team.trim().toLowerCase())+'|'+r.pair+'|'+r.cat;const o=best.get(k);if(!o||cmpRec(r,o)<0)best.set(k,r)}
+  const best=new Map();for(const r of rows){const k=(r.team.trim().toLowerCase())+'|'+r.pair+'|'+r.cat+'|'+r.mode;const o=best.get(k);if(!o||cmpRec(r,o)<0)best.set(k,r)}
   return [...best.values()]}
 async function fbSave(rec){
   const F={team:{stringValue:String(rec.team).slice(0,24)},pair:{stringValue:String(rec.pair)},cat:{stringValue:String(rec.cat)},score:{integerValue:String(Math.max(0,Math.round(rec.score)))},
-    time:{doubleValue:Math.round((rec.time||0)*10)/10},noRep:{integerValue:String(rec.noRep|0)},done:{booleanValue:!!rec.done},at:{integerValue:String(Date.now())}};
-  const r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});if(!r.ok)throw new Error('fb '+r.status);
+    time:{doubleValue:Math.round((rec.time||0)*10)/10},noRep:{integerValue:String(rec.noRep|0)},done:{booleanValue:!!rec.done},mode:{stringValue:String(rec.mode||'story')},at:{integerValue:String(Date.now())}};
+  let r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});
+  if(!r.ok&&(r.status===400||r.status===403)){const F2=Object.assign({},F);delete F2.mode;r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F2})});if(r.ok)console.warn('ranking: las reglas de Firebase no aceptan el campo mode')}
+  if(!r.ok)throw new Error('fb '+r.status);
   const d=await r.json();return d.name.split('/').pop()}
 let fbTimer=null;
 async function fbRefresh(){try{RK.rows=await fbLoad();RK.mode='shared'}catch(e){if(RK.mode!=='shared')RK.mode='local'}refreshRank()}
@@ -3296,12 +3306,16 @@ function drawBeachBG(g,cam){
   G.tut=null;
   if(PLAY.start==='2'){cut2Play(()=>setLevel(2))}
   else if(PLAY.start==='F'){startWod()}}}
-// solo el modo historia cuenta para el ranking
-{const _s=submitScore;submitScore=async function(rec){if(PLAY.mode==='story')return _s(rec);const m=$('#rSave');if(m)m.textContent='Partida de nivel suelto: no cuenta para el ranking (juega el modo historia).'}}
 // rótulos con letras de ChatGPT cuando existan (si no, texto)
 const MW_=(k,alt)=>'<img class="wimg" alt="'+alt+'" src="'+TXT_IMG[k]+'">';
 for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_elegir','Elegir nivel'],['[data-lvl="1"] .gtxt','g_nivel1','De camino al Lynx'],['[data-lvl="2"] .gtxt','g_nivel2','Lynx Social Training Club'],['[data-lvl="F"] .gtxt','g_final','Final']]){
   const el=$('#menu '+s);if(el&&TXT_IMG[k]){if(el.tagName==='BUTTON'){el.innerHTML=MW_(k,alt);el.setAttribute('aria-label',alt)}else el.outerHTML=MW_(k,alt)}}
+// ranking por modo: historia completa o cada nivel suelto
+const RK_MODEN={story:'Modo historia',n1:'Nivel 1 · De camino al Lynx',n2:'Nivel 2 · Lynx Social Training Club',n3:'Nivel 3 · Fitness Challenge League',final:'Final · El WOD'};
+function playMode(){if(/nivel3/.test(location.hash))return 'n3';if(/nivel2/.test(location.hash))return 'n2';if(PLAY.mode!=='lvl')return 'story';return PLAY.start==='F'?'final':'n'+PLAY.start}
+{const _s=submitScore;submitScore=function(rec){rec.mode=playMode();if(G&&G.final)G.final.mode=rec.mode;const m=$('#rkResMode');if(m)m.textContent='Ranking: '+(RK_MODEN[rec.mode]||'');return _s(rec)}}
+$$('#rkTabs button').forEach(b=>b.addEventListener('click',()=>{rkTab=b.dataset.t;refreshRank()}));
+{const _mg=menuGo;menuGo=function(p){if(p==='rank'){const m=G&&G.final&&G.final.mode;rkTab=RK_TABS.some(t=>t[0]===m)?m:'story'}_mg(p)}}
 /* ===== ONLINE: modo historia / elegir nivel y nivel 2 en el móvil del invitado ===== */
 NET_SKIP.add('boss');NET_SKIP.add('hbHit');
 // escena de entrada al box: la ven los dos
@@ -3829,7 +3843,7 @@ function initUI(){
 }
 function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
-  window.__nrb={mkJudge,spawnWave,startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
+  window.__nrb={mkJudge,spawnWave,menuGo:p=>menuGo(p),playMode:()=>playMode(),startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1800))]).then(init);
