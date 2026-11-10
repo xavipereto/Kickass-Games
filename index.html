@@ -2225,10 +2225,12 @@ ELITE_T.add('e1');ELITE_T.add('mirror');
 const E1_IMGS=E1A.pages.map(p=>lazyImg('l2',p));
 function e1Img(f){const i=E1_IMGS[f[6]||0];return i.complete&&i.naturalWidth?i:null}
 const GZ_T=2.2,GZ_ON=6/16*GZ_T,GZ_OFF=12/16*GZ_T,GZ_DMG=15,GZ_LANE=12,DUS_T=1.5,DU_V=118,DU_DMG=11,REST_T=3.4,TANG_T=2.8,EGO_T=2.8,MIR_HITS=10;
-const E1_AI=new Set(['walk','gz','dus','du','rest','tang','egoGo','ego','emerge']);
-const E1_ARMOR=new Set(['gz','rest','tang','ego','egoGo']); // reciben daño sin interrumpirse (la mirada, solo hasta que dispara)
+const E1_AI=new Set(['walk','gz','dus','du','rest','tang','egoGo','ego','emerge','flex']);
+const E1_ARMOR=new Set(['gz','rest','tang','ego','egoGo','flex','dus']); // reciben daño sin interrumpirse (la mirada, solo hasta que dispara)
 const e1Phase=e=>e.clone?3:e.hp>e.maxHp*2/3?1:e.hp>e.maxHp/3?2:3;
 const e1Mirror=()=>G.en.find(m=>m.type==='mirror'&&!m.dead&&m.st!=='dying');
+function e1Poise(e){if(G.run-(e.poiseT||-9)>1.4)e.poise=0;e.poiseT=G.run;e.poise=(e.poise||0)+1;const edgeNear=e.x<G.cam+80||e.x>G.cam+W-80;
+  return e.poise>=3||(edgeNear&&e.poise>=2)||/^(down|kdown|getup)$/.test(e.st)&&e.poise>=2}
 function e1Say(e,txt){e.shoutTxt=txt;e.shout=1.6}
 function e1Next(e){const ph=e1Phase(e);
   if(!e.clone&&ph===3&&!e.egoDone){e.st='egoGo';e.t=0;e1Say(e,'¡MIRAD QUÉ CUERPAZO!');return}
@@ -2241,7 +2243,7 @@ function updE1(e,dt){const tg=nearestAth(e),L=G.cam,R=G.cam+W;if(e.hitT>0)e.hitT
   switch(e.st){
     case 'walk':{if(!e.want)e1Next(e);if(e.st!=='walk')break;
       const dx=tg.x-e.x,dy=tg.y-e.y;e.face=dx>0?1:-1;
-      if(e.want==='gz'){const tx=tg.x-Math.sign(dx||1)*170,mx=Math.abs(tx-e.x)>14?Math.sign(tx-e.x):0,my=Math.abs(dy)>3?Math.sign(dy):0;
+      if(e.want==='gz'){let tx=tg.x-Math.sign(dx||1)*170;if(tx<L+80||tx>R-80)tx=tg.x+Math.sign(dx||1)*170;tx=clamp(tx,L+80,R-80);const mx=Math.abs(tx-e.x)>14?Math.sign(tx-e.x):0,my=Math.abs(dy)>3?Math.sign(dy):0;
         e.vx=mx*e.spd;e.vy=my*e.spd*.9;e.ph+=dt*((mx||my)?1:0);
         if(e.cd<=0&&Math.abs(dy)<7&&Math.abs(dx)>60&&e.x>L+20&&e.x<R-20){e.st='gz';e.t=0;e.vx=e.vy=0;e.hitSet=[];e.want=null;e1Say(e,pick(['¿Tú? ¿Aquí?','Ni me despeino.','Mírame bien.']))}}
       else{const tx=clamp(e.x,L+70,R-70),mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0;e.vx=mx*e.spd;e.vy=0;e.ph+=dt*(mx?1:0);
@@ -2260,7 +2262,7 @@ function updE1(e,dt){const tg=nearestAth(e),L=G.cam,R=G.cam+W;if(e.hitT>0)e.hitT
         if(Math.abs(a.x-e.x)<28&&Math.abs(a.y-e.y)<14){a.duT=.9;hurtAth(a,e.clone?Math.round(DU_DMG*.75):DU_DMG,a.x>e.x?1:-1,.3);if(a.st==='hurt')a.vx=(a.x>e.x?1:-1)*220;SFX.hit();ftext(a.x,a.y-86,'¡ZAS!','#ffd23f',10)}}
       // una dumbbell lanzada le enreda la comba
       for(const p of G.proj){if(p.kind!=='db'||p.dead)continue;if(Math.abs(p.x-e.x)<22&&Math.abs(p.y-e.y)<16){p.dead=true;p.life=0;e.st='tang';e.t=0;e.inv=0;e.vx=e.vy=0;G.hitstop=.1;G.shake=.35;SFX.boom();
-        e.hp=Math.max(e.clone?e.hp:Math.ceil(e.maxHp/3),e.hp-(e.clone?0:30));e.flash=.2;burst(e.x,e.y-40,16,'#4fe3df',220);ftext(e.x,e.y-110,'¡ENREDADO!','#4fe3df',13);photoCharge(10);break}}
+        e.hp=Math.max(e.clone?e.hp:Math.floor(e.maxHp/3),e.hp-(e.clone?0:30));e.flash=.2;burst(e.x,e.y-40,16,'#4fe3df',220);ftext(e.x,e.y-110,'¡ENREDADO!','#4fe3df',13);photoCharge(10);break}}
       if(e.st==='du'&&e.t>=e.duT){e.st='rest';e.t=0;e.inv=0;e.vx=e.vy=0;e1Say(e,pick(['Uf… solo… estoy calentando…','Un… segundo…']))}
     }break;
     case 'rest':e.vx=e.vy=0;if(e.t>=REST_T){e.st='walk';e.t=0;e.cd=.6}break;
@@ -2272,6 +2274,10 @@ function updE1(e,dt){const tg=nearestAth(e),L=G.cam,R=G.cam+W;if(e.hitT>0)e.hitT
       if(m&&!e.cloned&&e.t>=EGO_T*.82){e.cloned=1;const c=mkJudge('e1',m.x,m.y,G.cat);Object.assign(c,{clone:true,hp:e.maxHp,maxHp:e.maxHp,st:'emerge',t:0,face:1,cd:1.2,egoDone:true});G.en.push(c);
         G.flash=.3;G.shake=.3;SFX.boom();ftext(m.x,m.y-150,'¡YO Y MI EGO!','#ffd23f',14);startTalk('e1ego')}}
       if(e.t>=EGO_T){e.st='walk';e.t=0;e.egoDone=true;e.cd=1;e.want=null}break;
+    case 'flex':e.vx=e.vy=0;e.inv=.2;
+      if(!e.flexed&&e.t>=.35){e.flexed=1;G.shake=.35;SFX.boom();ring(e.x,e.y-50,120);burst(e.x,e.y-60,22,'#ffd23f',260);ftext(e.x,e.y-120,'¡ATRÁS, PLEBEYOS!','#ffd23f',12);
+        for(const a of G.ath){if(!athUp(a)||a.st==='roll')continue;const d=Math.hypot(a.x-e.x,(a.y-e.y)*2);if(d<130){const s=a.x>=e.x?1:-1;if(a.inv>0){a.vx=s*260;continue}hurtAth(a,6,s,.3);a.vx=s*300}}}
+      if(e.t>=.9){e.st='walk';e.t=0;e.flexed=0;e.poise=0;e.cd=0;e.want=null;e1Next(e)}break;
     case 'emerge':e.vx=e.face*50;e.vy=0;if(e.t>=.9){e.st='walk';e.t=0;e.want=null}break;
   }
   e.x=clamp(e.x+e.vx*dt,L-80,R+80);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
@@ -2285,13 +2291,16 @@ function mirHit(m){if(m.hits>=MIR_HITS)return;m.hits++;m.flash=.12;m.shake=.2;G.
   if(e.type==='mirror'){if(e.st==='mir')mirHit(e);return}
   if(e.type==='e1'){
     if(!e.clone&&e1Mirror()){e.flash=.08;if(!(e.invT>0)){e.invT=.6;ftext(e.x,e.y-110,'¡INVENCIBLE!','#cfe8ff',10)}return}
-    if(e.clone){const hp=e.hp;if(E1_ARMOR.has(e.st)&&!(e.st==='gz'&&e.t>=GZ_OFF)){e.flash=.1;return}_h(e,dmg,dir,kd,kb);e.hp=hp;if(e.st==='dying'){e.st='walk'}return}
-    const cap=e.egoDone?0:Math.ceil(e.maxHp/3);if(e.hp-dmg<cap)dmg=Math.max(0,e.hp-cap);
+    if(e.clone){const hp=e.hp;if(E1_ARMOR.has(e.st)&&!(e.st==='gz'&&e.t>=GZ_OFF)){e.flash=.1;return}if(e1Poise(e)){e.flash=.12;return}_h(e,dmg,dir,kd,kb);e.hp=hp;if(e.st==='dying'){e.st='walk'}return}
+    const cap=e.egoDone?0:Math.floor(e.maxHp/3);if(e.hp-dmg<cap)dmg=Math.max(0,e.hp-cap);
     if(E1_ARMOR.has(e.st)&&!(e.st==='gz'&&e.t>=GZ_OFF)){e.hp-=dmg;e.flash=.12;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-40,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return}
-    if(e.st==='walk'&&(e.hitN=(e.hitN||0)+1)>=4){e.hitN=0;e.hp-=dmg;e.flash=.12;e.cd=0;burst(e.x,e.y-40,6,'#fff6c0',130);if(e.hp<=0)killE(e,dir);return} // no se deja encadenar sin fin
+    // aguante: no se deja encadenar. Al 3.er golpe seguido (2.º si está arrinconado) o al bajar de fase, saca músculo y os aparta
+    {const ph0=e1Phase(e),ph1=e.hp-dmg>e.maxHp*2/3?1:e.hp-dmg>e.maxHp/3?2:3;
+     if(ph1!==ph0||e1Poise(e)){e.hp-=dmg;e.flash=.15;G.combo++;G.comboT=2.2;G.score+=Math.round(dmg*3);burst(e.x,e.y-40,8,'#fff6c0',150);if(e.hp<=0){killE(e,dir);return}
+       e.st='flex';e.t=0;e.vx=e.vy=0;e.z=0;e.flexed=0;return}}
   }
   return _h(e,dmg,dir,kd,kb)}}
-{const _b=bossCap;bossCap=function(e,dmg){if(e.type==='e1'){if(e.clone||e1Mirror())return 0;const cap=e.egoDone?0:Math.ceil(e.maxHp/3);return Math.max(0,Math.min(dmg,e.hp-cap))}return _b(e,dmg)}}
+{const _b=bossCap;bossCap=function(e,dmg){if(e.type==='e1'){if(e.clone||e1Mirror())return 0;const cap=e.egoDone?0:Math.floor(e.maxHp/3);return Math.max(0,Math.min(dmg,e.hp-cap))}return _b(e,dmg)}}
 {const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='e1'&&!e.clone){for(const o of G.en)if(o!==e&&(o.type==='mirror'||o.type==='e1')){o.st='dying';o.t=0;o.poof=1}G.mirFx=[];bigMsg('¡NARCISUS HA CAÍDO!',2);G.e1Down=1}}}
 function updE1Extra(dt){for(const e of G.en)if(e.type==='e1'){if(e.st==='grabbed'||e.st==='kicked')e.kas=1;else if(e.st==='walk'||E1_AI.has(e.st))e.kas=0}
 for(const m of G.en)if(m.type==='mirror'){if(m.hx==null){m.hx=m.x;m.hy=m.y}m.x=m.hx;m.y=m.hy;m.vx=m.vy=0}
@@ -2306,6 +2315,7 @@ function e1Frame(e){const t=e.t||0,F=E1A.fr;
     case 'rest':return['rest',t<.45?Math.floor(t/.45*4):t<REST_T-.55?4+Math.floor((t-.45)*7)%8:Math.min(15,12+Math.floor((t-(REST_T-.55))/.55*4))];
     case 'tang':return['tang',Math.min(15,Math.floor(t/TANG_T*16))];
     case 'ego':return['ego',Math.min(15,Math.floor(t/EGO_T*16))];
+    case 'flex':return['ego',t<.3?7+Math.floor(t/.3*2):9+Math.floor(t*10)%3];
     case 'hurt':return['hit',Math.min(7,Math.floor(t/.3*8))];
     case 'stun':return['hit',4];
     case 'grabbed':return['kas',Math.min(2,Math.floor(t/.25*3))];
@@ -3504,7 +3514,7 @@ function lvlTitle(n){G.lvlT={k:n===2?'g_nivel2':'g_nivel1',alt:n===2?'LYNX SOCIA
 const CONT_T=5,CONT_PEN=1500;
 // equilibrio del nivel 2: la élite pega y aguanta menos (antes era casi imposible llegar a Jordi)
 Object.assign(JT.e2,{hp:60,dmg:9});Object.assign(JT.e3,{hp:62,dmg:9});Object.assign(JT.e4,{hp:66,dmg:8});Object.assign(JT.e5,{hp:60,dmg:11});
-Object.assign(JT.e6,{hp:200,dmg:14});Object.assign(JT.e1,{hp:380,dmg:15});
+Object.assign(JT.e6,{hp:200,dmg:14});Object.assign(JT.e1,{hp:450,dmg:15});
 {const L=WAVES2;L[0].e=['e3','e5'];L[1].e=['e2','e4'];L[2].e=['e2','e5','e3'];L[3].e=['e3','e4','e5']}
 {const _m=mkCrates;mkCrates=function(){const cs=_m();if(G&&G.lvl===2||(typeof setLevel!=='undefined'&&mkCrates._l2))cs.forEach((c,i)=>{if(i%3===1&&!c.items.includes('gdb')&&!c.items.includes('shake'))c.items.push('shake')});return cs}}
 {const _s=setLevel;setLevel=function(n){mkCrates._l2=n===2;_s(n);mkCrates._l2=false}}
