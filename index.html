@@ -3316,6 +3316,16 @@ function playMode(){if(/nivel3/.test(location.hash))return 'n3';if(/nivel2/.test
 {const _s=submitScore;submitScore=function(rec){rec.mode=playMode();if(G&&G.final)G.final.mode=rec.mode;const m=$('#rkResMode');if(m)m.textContent='Ranking: '+(RK_MODEN[rec.mode]||'');return _s(rec)}}
 $$('#rkTabs button').forEach(b=>b.addEventListener('click',()=>{rkTab=b.dataset.t;refreshRank()}));
 {const _mg=menuGo;menuGo=function(p){if(p==='rank'){const m=G&&G.final&&G.final.mode;rkTab=RK_TABS.some(t=>t[0]===m)?m:'story'}_mg(p)}}
+// nivel suelto: al cruzar la puerta del final se acaba la partida (sin WOD) y puntúa solo el nivel
+const LVL_NAME={1:'De camino al Lynx',2:'Lynx Social Training Club',3:'Fitness Challenge League'};
+{const _eb=enterBox;enterBox=function(){const m=playMode();if(/^n\d$/.test(m)&&!G.over){G.lvlOnly=true;G.ath.forEach(a=>{a.vx=a.vy=0});finishRun('done');return}_eb()}}
+{const _f=finishRun;finishRun=function(kind){if(!(G&&G.lvlOnly&&kind==='done'))return _f(kind);if(G.over)return;
+  G.over=true;G.endKind=kind;G.phase='over';const c=G.cat,n=G.lvl||1;
+  gcEv('nivel-completado','Nivel '+n+' completado · '+c.name);
+  const score=Math.max(0,Math.round((G.score+1500)*c.mult)-G.noRep*50);
+  G.final={team:G.o.team,pair:G.o.pair,cat:c.name,score,time:G.run,noRep:G.noRep,done:true,photog:G.o.photog,at:Date.now(),
+    head:'¡RETO COMPLETADO!',sub:'Nivel '+n+' · '+(LVL_NAME[n]||'')+' superado en '+fmtT(G.run)};
+  mode='results';clearKeys();SFX.win();setTimeout(showResults,600)}}
 /* ===== ONLINE: modo historia / elegir nivel y nivel 2 en el móvil del invitado ===== */
 NET_SKIP.add('boss');NET_SKIP.add('hbHit');
 // escena de entrada al box: la ven los dos
