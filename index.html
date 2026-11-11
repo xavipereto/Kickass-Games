@@ -3418,7 +3418,7 @@ function drawMesaSeg(g,e){const m=G.mesa;if(!m||!okB(MOURE_IMG))return;const f=M
 /* ===== MODOS DE JUEGO: historia (nivel 1 → nivel 2 → final) o elegir nivel ===== */
 {$('#modeStory').addEventListener('click',()=>{PLAY.mode='story';PLAY.start='1';PLAY.from='mode';menuGo('s1')});
  $$('#menu [data-lvl]').forEach(b=>b.addEventListener('click',()=>{PLAY.mode='lvl';PLAY.start=b.dataset.lvl;PLAY.from='lvl';menuGo('s1')}))}
-{const _sg=startGame;startGame=function(o){_sg(o);if(!G||NET.role==='guest'||/nivel2/.test(location.hash))return;
+{const _sg=startGame;startGame=function(o){_sg(o);if(!G||NET.role==='guest'||/nivel[23]/.test(location.hash))return;
   if(PLAY.mode!=='lvl'||PLAY.start==='1')return;
   G.tut=null;
   if(PLAY.start==='2'){cut2Play(()=>setLevel(2))}
