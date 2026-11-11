@@ -3425,11 +3425,11 @@ function drawMesaSeg(g,e){const m=G.mesa;if(!m||!okB(MOURE_IMG))return;const f=M
   for(const ch in L3EN.fr){for(const nm in L3EN.fr[ch])for(const f of L3EN.fr[ch][nm])f[6]+=off;ELITE.fr[ch]=L3EN.fr[ch];ELITE_T.add(ch)}}
 JT.k1={hp:85,spd:50,dmg:10,reach:30,wpn:'none',s:1,val:350,armor:false,mute:true};JPAL.k1=JPAL.base;
 const K1_T=1.5,K1_HIT=[.375,.75,1.13];
-function updK1(e,tg,dt){
+function updK1(e,tg,dt){if(typeof l3ShoutTick==='function')l3ShoutTick(e,dt);
   switch(e.st){
     case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*50;
       const mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0,my=Math.abs(dy)>4?Math.sign(dy)*.8:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
-      if(e.cd<=0&&Math.abs(dx)<68&&Math.abs(dy)<14&&athUp(tg)){e.st='pc';e.t=0;e.vx=e.vy=0;e.pcHit=[]}}break;
+      if(e.cd<=0&&Math.abs(dx)<68&&Math.abs(dy)<14&&athUp(tg)){e.st='pc';e.t=0;e.vx=e.vy=0;e.pcHit=[];if(Math.random()<.35)faguShout(e,'¡FUERA DE MI CARRIL!')}}break;
     case 'pc':e.vx=e.vy=0;if(e.t<.3){const t2=nearestAth(e);if(t2)e.face=t2.x>e.x?1:-1}
       K1_HIT.forEach((ht,i)=>{if(e.t<ht||e.pcHit.includes(i))return;e.pcHit.push(i);SFX.swing();const last=i===K1_HIT.length-1;
         for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>26)continue;const ddx=(a.x-e.x)*e.face;
@@ -3444,12 +3444,15 @@ function updK1(e,tg,dt){
    y te lanza conos en arco (se esquivan saliendo del carril, rodando o saltando; con un golpe de barra o patada se devuelven) --- */
 JT.k2={hp:80,spd:46,dmg:12,reach:30,wpn:'none',s:1,val:380,armor:false,mute:true};JPAL.k2=JPAL.base;
 const K2_T=1.6,K2_REL=7/16*K2_T,FAGU_SHOUTS=['¡DESPEJAD EL CARRIL!','¡DESPEJAD EL CARRIL!','¡FUERA DE LA PISTA!','¡ESE CARRIL NO ES VUESTRO!'];
-function faguShout(e,txt){e.shoutTxt=txt||FAGU_SHOUTS[Math.floor(Math.random()*FAGU_SHOUTS.length)];e.shout=1.5;e.shCd=rr(4,7)}
-function updK2(e,tg,dt){e.shout=Math.max(0,(e.shout||0)-dt);e.shCd=(e.shCd==null?rr(.5,2):e.shCd)-dt;
+const L3_SHOUTS={k1:['¡FUERA DE MI CARRIL!','¡ESTE CARRIL ES MÍO!','¡APARTA, QUE VOY A POR EL PR!','¡SOY EL 127, CHAVAL!'],
+  k2:FAGU_SHOUTS,k3:['¡FUERA DE MI CARRIL!','¡QUITA, QUE VOY LANZADA!','¡ESTE HEAT LO GANO YO!','¡A UN LADO, NOVATOS!']};
+// los competidores gritan de vez en cuando; un solo bocadillo nuevo cada poco para que no se tapen entre ellos
+function faguShout(e,txt){if(!txt&&(G.run-(G.l3shT||-9)<1.6||G.bigT>0))return;G.l3shT=G.run;const L=L3_SHOUTS[e.type]||FAGU_SHOUTS;e.shoutTxt=txt||L[Math.floor(Math.random()*L.length)];e.shout=1.5;e.shCd=rr(5,9)}
+function l3ShoutTick(e,dt){e.shout=Math.max(0,(e.shout||0)-dt);e.shCd=(e.shCd==null?rr(1,4):e.shCd)-dt;if(e.st==='walk'&&e.shCd<=0&&e.x>G.cam&&e.x<G.cam+W)faguShout(e)}
+function updK2(e,tg,dt){l3ShoutTick(e,dt);
   switch(e.st){
     case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*170;
       const mx=Math.abs(tx-e.x)>10?Math.sign(tx-e.x):0,my=Math.abs(dy)>5?Math.sign(dy)*.8:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
-      if(e.shCd<=0&&e.x>G.cam&&e.x<G.cam+W)faguShout(e);
       if(e.cd<=0&&Math.abs(dx)>80&&Math.abs(dx)<300&&Math.abs(dy)<16&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='cn';e.t=0;e.vx=e.vy=0;e.done=false;if(Math.random()<.6)faguShout(e,'¡DESPEJAD EL CARRIL!')}}break;
     case 'cn':e.vx=e.vy=0;if(e.t<.6){const t2=nearestAth(e);if(t2)e.face=t2.x>e.x?1:-1}
       if(!e.done&&e.t>=K2_REL){e.done=true;(G.kbs=G.kbs||[]).push({cone:1,x:e.x+e.face*30,y:e.y,z:70,vx:e.face*270,vz:50,rot:0,b:0,hit:[],life:2.4,dmg:e.dmg});SFX.throw()}
@@ -3458,7 +3461,7 @@ function updK2(e,tg,dt){e.shout=Math.max(0,(e.shout||0)-dt);e.shCd=(e.shCd==null
   e.x=clamp(e.x+e.vx*dt,-60,LEVEL_W+60);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
 }
 {const _f=e2Frame;e2Frame=function(e){if(e.type==='k2'&&e.st==='cn')return['cn',Math.min(15,Math.floor((e.t||0)/K2_T*16))];return _f(e)}}
-{const _d=drawElite;drawElite=function(g,e){_d(g,e);if(e.type==='k2'&&e.shout>0&&(e.st==='walk'||e.st==='cn'))drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),e.face||1,e.shout)}}
+{const _d=drawElite;drawElite=function(g,e){_d(g,e);if((e.type==='k1'||e.type==='k2'||e.type==='k3')&&e.shout>0&&(e.st==='walk'||e.st==='cn'||e.st==='pc'||e.st==='bj'))drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),e.face||1,e.shout)}}
 // los conos viajan con las kettlebells (mismo vuelo, bote y devolución) pero se dibujan con su sprite
 {const _d=drawKB;drawKB=function(g){if(!G.kbs||!G.kbs.length)return;const all=G.kbs,cones=all.filter(k=>k.cone);
   if(cones.length<all.length){G.kbs=all.filter(k=>!k.cone);_d(g);G.kbs=all}
@@ -3470,11 +3473,11 @@ function updK2(e,tg,dt){e.shout=Math.max(0,(e.shout||0)-dt);e.shCd=(e.shCd==null
    y sale disparada con un salto largo que te arrolla. El burpee es el aviso: sal del carril, rueda o pégale antes --- */
 JT.k3={hp:75,spd:58,dmg:14,reach:30,wpn:'none',s:1,val:380,armor:false,mute:true};JPAL.k3=JPAL.base;
 const K3_T=1.9,K3_JUMP=[10/16*K3_T,13/16*K3_T],K3_V=520;
-function updK3(e,tg,dt){
+function updK3(e,tg,dt){l3ShoutTick(e,dt);
   switch(e.st){
     case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*160;
       const mx=Math.abs(tx-e.x)>10?Math.sign(tx-e.x):0,my=Math.abs(dy)>4?Math.sign(dy)*.9:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
-      if(e.cd<=0&&Math.abs(dx)>90&&Math.abs(dx)<240&&Math.abs(dy)<14&&athUp(tg)&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='bj';e.t=0;e.vx=e.vy=0;e.bjHit=[]}}break;
+      if(e.cd<=0&&Math.abs(dx)>90&&Math.abs(dx)<240&&Math.abs(dy)<14&&athUp(tg)&&e.x>G.cam+10&&e.x<G.cam+W-10){e.st='bj';e.t=0;e.vx=e.vy=0;e.bjHit=[];if(Math.random()<.5)faguShout(e,'¡FUERA DE MI CARRIL!')}}break;
     case 'bj':{e.vy=0;const fly=e.t>=K3_JUMP[0]&&e.t<K3_JUMP[1];e.vx=fly?e.face*K3_V:0;
       if(fly&&!e.whoosh){e.whoosh=1;SFX.swing()}
       if(fly)for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>30||e.bjHit.includes(a))continue;const ddx=(a.x-e.x)*e.face;
