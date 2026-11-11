@@ -3515,7 +3515,7 @@ TALKS.brid={name:BRI_NAME,pages:[
   {e:1,txt:'Pasad, pasad… Pero el año que viene, inscripción anticipada. ¡Y Buti viene conmigo!'}]};
 const BRI_PC=1.6,BRI_HIT=[.35,.65,1.05],BRI_CMD=1.8,BRI_GO=.95,BUTI_V=300,BRI_SHOUTS=['¡ESTA ES MI COMPETICIÓN!','¡AQUÍ MANDO YO!','¿SIN INSCRIPCIÓN? ¡NI HABLAR!','¡SEGURIDAD… ESTO… BUTI!'];
 // FASE 2 (a partir de 2/3 de vida): MEGÁFONO DORADO. Onda en cono hacia delante que empuja y marea; se esquiva saliendo de delante o rodando
-const BRI_MG=2.2,BRI_MGON=[7/16*BRI_MG,12.5/16*BRI_MG],MG_LEN=300,MG_SHOUTS=['¡ESTÁIS DESCALIFICADOS!','¡FUERA DE MI PISTA!','¡NO REP! ¡NO REP! ¡NO REP!'];
+const BRI_MG=2.2,BRI_MGON=[7/16*BRI_MG,12.5/16*BRI_MG],MG_LEN=300,MG_SHOUTS=['¡FUERA DE MI PISTA!','¡FUERA, INÚTILES!','¡FUERA DEL CAMPING!','¡ESTÁIS DESCALIFICADOS!'];
 const BUTI_CALL=['¡A POR ELLOS, BUTI!','¡BUTI, ATACA!','¡VAMOS, BUTI!'];
 function briShout(e,txt){e.shoutTxt=txt;e.shout=1.6;musicDuck(.5,900)}
 function mkButi(b){const d={x:b.x+40,y:b.y+8,face:-1,st:'sit',t:0,z:0,vz:0,vx:0,tg:null,sh:0,dmgT:0};d.ent={kind:'buti',x:d.x,y:d.y,hp:0,bt:-1};G.crates.push(d.ent);return d}
