@@ -3370,6 +3370,8 @@ function drawBeachBG(g,cam){
 const CUT3_CAPS=['Al otro lado del COMPETITION FLOOR no estaba la pista…','…sino un remolino de luz que se los tragó de golpe.','Pinos, sol y olor a crema solar. ¿Esto es… la Costa Brava?','Camping La Ballena Alegre. FITNESS CHALLENGE LEAGUE. Y nadie les esperaba.'];
 {const _c=cutSet;cutSet=function(set){if(set==='l3'){const p=(G&&G.o&&G.o.pair)||'X';return {img:CUT3_IMG[p]||CUT3_IMG.X,caps:CUT3_CAPS,aria:'Escena: el portal a la Costa Brava. Pulsa para avanzar.'}}return _c(set)}}
 
+// el bocadillo hace su «pop» solo al aparecer (drawBubble lo agranda mientras la vida pase de .95)
+function bubLife(l,max){const el=max-l;return el<.15?1.1-el:Math.min(.95,l)}
 /* --- D. MOURE y la mesa de inscripciones: corta el paso hasta que la rompéis --- */
 const MOURE_IMG=lazyImg('l3',MOURE.img),MX=600,MESA_HP=18,MOURE_SPD=240;
 PORTRAITS.moure.expr=true; // sus 4 retratos son expresiones: 0 apurado · 1 hablando · 2 enfadado · 3 chulo
@@ -3416,7 +3418,7 @@ function moureFrame(m){const c=performance.now()/1000,F=MOURE.fr;
 function drawMoureSpr(g,m){if(!okB(MOURE_IMG))return;const f=moureFrame(m),u=MOURE.u,x=Math.round(m.mx),y=Math.round(m.my);
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y,20,5,0,0,7);g.fill();
   g.drawImage(MOURE_IMG,f[0],f[1],f[2],f[3],Math.round(x-f[4]*u),Math.round(y-f[5]*u),f[2]*u,f[3]*u);
-  if(m.ph==='flee'&&m.sh>0)drawBubble(g,'¡BRIATOREEE!',x+10,y-96,1,m.sh)}
+  if(m.ph==='flee'&&m.sh>0)drawBubble(g,'¡BRIATOREEE!',x+10,y-96,1,bubLife(m.sh,2.2))}
 function drawMesaSeg(g,e){const m=G.mesa;if(!m||!okB(MOURE_IMG))return;const f=MOURE.fr.mesa[m.st],u=MOURE.u,sh=m.shake>0?Math.sin(m.shake*90)*2:0;
   if(m.st<2){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(e.x),Math.round(e.y),70,6,0,0,7);g.fill()}
   g.drawImage(MOURE_IMG,f[0],f[1],f[2],f[3],Math.round(e.x+sh-f[4]*u),Math.round(e.y-f[5]*u),f[2]*u,f[3]*u)}
@@ -3463,7 +3465,7 @@ function updK2(e,tg,dt){l3ShoutTick(e,dt);
   e.x=clamp(e.x+e.vx*dt,-60,LEVEL_W+60);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
 }
 {const _f=e2Frame;e2Frame=function(e){if(e.type==='k2'&&e.st==='cn')return['cn',Math.min(15,Math.floor((e.t||0)/K2_T*16))];return _f(e)}}
-{const _d=drawElite;drawElite=function(g,e){_d(g,e);if((e.type==='k1'||e.type==='k2'||e.type==='k3')&&e.shout>0&&(e.st==='walk'||e.st==='cn'||e.st==='pc'||e.st==='bj'))drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),e.face||1,e.shout)}}
+{const _d=drawElite;drawElite=function(g,e){_d(g,e);if((e.type==='k1'||e.type==='k2'||e.type==='k3')&&e.shout>0&&(e.st==='walk'||e.st==='cn'||e.st==='pc'||e.st==='bj'))drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),e.face||1,bubLife(e.shout,1.5))}}
 // los conos viajan con las kettlebells (mismo vuelo, bote y devolución) pero se dibujan con su sprite
 {const _d=drawKB;drawKB=function(g){if(!G.kbs||!G.kbs.length)return;const all=G.kbs,cones=all.filter(k=>k.cone);
   if(cones.length<all.length){G.kbs=all.filter(k=>!k.cone);_d(g);G.kbs=all}
@@ -3499,8 +3501,8 @@ TXT_KEY['¡COMPETIDORES A LA VISTA!']='t_vista3';
    Especial: chasquea, silba y manda a BUTI: corre a por el atleta más cercano y se le engancha al tobillo
    (frena y va quitando vida poco a poco). Se suelta a golpes (3 ataques), rodando o con un golpe de otro atleta.
    Buti no muere: sale volando, se marea y vuelve con su dueño. */
-const BRI_NAME='BRIATORE',BRI_ARMOR=new Set(['pc','cmd','intro','mg']);
-JT.bri={hp:460,spd:54,dmg:13,reach:34,wpn:'none',s:1,val:3000,armor:false,mute:true,nograb:true};JPAL.bri=JPAL.base;
+const BRI_NAME='BRIATORE',BRI_ARMOR=new Set(['pc','cmd','intro','mg','call']);
+JT.bri={hp:540,spd:54,dmg:13,reach:34,wpn:'none',s:1,val:3000,armor:false,mute:true,nograb:true};JPAL.bri=JPAL.base;
 PORTRAITS.bri.expr=true; // 0 chulo · 1 hablando · 2 furioso · 3 sonrisa malvada
 TALKS.bri={name:BRI_NAME,pages:[
   {e:0,txt:'Así que vosotros sois los que habéis roto la mesa de Moure…'},
@@ -3524,9 +3526,12 @@ function updBri(e,dt){const L=G.cam,R=G.cam+W,d=G.buti;e.shout=Math.max(0,(e.sho
   const bit=d&&d.st==='bite'&&d.tg,tg=bit||nearestAth(e);if(!tg)return;
   switch(e.st){
     case 'intro':e.vx=e.vy=0;e.inv=.2;e.face=-1;if(e.t>=2.4){e.st='walk';e.t=0;e.cd=1;startTalk('bri')}break;
-    case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*52,sp=e.spd*(bit?1.5:1);
+    case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*52,sp=e.spd*(bit?1.5:1)*(e.ph3?1.25:1);
       const mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0,my=Math.abs(dy)>4?Math.sign(dy)*.8:0;e.vx=mx*sp;e.vy=my*sp;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
       e.shCd=(e.shCd==null?4:e.shCd)-dt;if(e.shCd<=0&&!G.bigT){e.shCd=rr(6,10);briShout(e,BRI_SHOUTS[Math.floor(Math.random()*BRI_SHOUTS.length)])}
+      if(!e.ph3&&e.hp<=e.maxHp/3){e.ph3=1;e.callN=0;e.callCd=0;e.ph2=1;briShout(e,'¡¿QUIÉN SE HA CREÍDO QUE ES?! ¡MOUREEE!');G.shake=Math.max(G.shake,.25)}
+      if(e.ph3){e.callCd-=dt;const others=G.en.some(o=>o!==e&&!o.dead&&o.st!=='dying');
+        if(e.callCd<=0&&e.callN<2&&!others&&!G.mrun){e.st='call';e.t=0;e.vx=e.vy=0;e.go=0;e.face=-1;briShout(e,'¡MOUREEE! ¡REFUERZOS!');break}}
       if(!e.ph2&&e.hp<=e.maxHp*2/3){e.ph2=1;e.mgCd=0;briShout(e,'¡SE ACABÓ! ¡ESTÁIS DESCALIFICADOS!');musicDuck(.35,1400);G.shake=Math.max(G.shake,.2)}
       if(e.ph2&&(e.mgCd=(e.mgCd||0)-dt)<=0&&Math.abs(dy)<40&&Math.abs(dx)<320&&!(d&&d.st==='sit'&&e.butiCd<=0&&Math.random()<.4)){e.st='mg';e.t=0;e.vx=e.vy=0;e.mgHit=[];e.face=dx>0?1:-1;if(e.shout<=0)briShout(e,MG_SHOUTS[Math.floor(Math.random()*MG_SHOUTS.length)]);break}
       if(d&&d.st==='sit'&&e.butiCd<=0&&e.x>L+30&&e.x<R-30){e.st='cmd';e.t=0;e.vx=e.vy=0;e.go=0;briShout(e,BUTI_CALL[Math.floor(Math.random()*BUTI_CALL.length)]);break}
@@ -3534,6 +3539,8 @@ function updBri(e,dt){const L=G.cam,R=G.cam+W,d=G.buti;e.shout=Math.max(0,(e.sho
     case 'cmd':e.vx=e.vy=0;{const t2=nearestAth(e);if(t2&&e.t<.6)e.face=t2.x>e.x?1:-1}
       if(!e.go&&e.t>=BRI_GO){e.go=1;if(d&&d.st==='sit'){const t2=nearestAth(e);if(t2){d.st='run';d.t=0;d.tg=t2;SFX.swing()}}}
       if(e.t>=BRI_CMD){e.st='walk';e.t=0;e.cd=.6;e.butiCd=rr(6,9)}break;
+    case 'call':e.vx=e.vy=0;if(!e.go&&e.t>=BRI_GO){e.go=1;mourerun(e.callN)}
+      if(e.t>=BRI_CMD){e.st='walk';e.t=0;e.cd=.6;e.callN++;e.callCd=14}break;
     case 'mg':e.vx=e.vy=0;if(e.t<.5){const t2=nearestAth(e);if(t2){e.face=t2.x>e.x?1:-1;e.y+=clamp(t2.y-e.y,-60*dt,60*dt)}}
       if(e.t>=BRI_MGON[0]&&e.t<BRI_MGON[1]){if(!e.mgS){e.mgS=1;G.shake=Math.max(G.shake,.3);SFX.boom();musicDuck(.4,1200)}
         const reach=Math.min(MG_LEN,(e.t-BRI_MGON[0])*900);
@@ -3552,6 +3559,7 @@ function updBri(e,dt){const L=G.cam,R=G.cam+W,d=G.buti;e.shout=Math.max(0,(e.sho
 {const _f=e2Frame;e2Frame=function(e){if(e.type==='bri'){const t=e.t||0;
   if(e.st==='pc')return['pc',Math.min(15,Math.floor(t/BRI_PC*16))];
   if(e.st==='mg')return['mg',Math.min(15,Math.floor(t/BRI_MG*16))];
+  if(e.st==='call')return['cmd',Math.min(15,Math.floor(t/BRI_CMD*16))];
   if(e.st==='cmd')return['cmd',Math.min(15,Math.floor(t/BRI_CMD*16))];
   if(e.st==='intro')return['intro',Math.min(15,Math.floor(t/2.4*16))];}
   return _f(e)}}
@@ -3561,7 +3569,7 @@ function drawMgWave(g,e){const t=e.t-BRI_MGON[0];if(t<0||e.t>=BRI_MGON[1]+.25)re
   for(let i=0;i<4;i++){const r=((t*520)+i*75)%MG_LEN;if(r>L)continue;const a=(1-r/MG_LEN)*.85*fade;g.strokeStyle='rgba(255,220,90,'+a+')';g.lineWidth=5-i*.6;
     g.beginPath();g.ellipse(r*.35,40*(r/MG_LEN),r*.5+6,16+r*.3,0,-.9,.9);g.stroke()}
   g.restore()}
-{const _d=drawElite;drawElite=function(g,e){if(e.type==='bri'&&(e.st==='dying'||G.briDown))return;_d(g,e);if(e.type==='bri'&&e.st==='mg')drawMgWave(g,e);if(e.type==='bri'&&e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-124),e.face||1,e.shout)}}
+{const _d=drawElite;drawElite=function(g,e){if(e.type==='bri'&&(e.st==='dying'||G.briDown))return;_d(g,e);if(e.type==='bri'&&e.st==='mg')drawMgWave(g,e);if(e.type==='bri'&&e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-124),e.face||1,bubLife(e.shout,1.6))}}
 // la entrada: aparece a la derecha y se presenta (las gafas, el cuello, los brazos) antes de hablar
 {const _sw=spawnWave;spawnWave=function(w){_sw(w);const b=G.en.find(e=>e.type==='bri'&&!e.st0);if(b){b.st0=1;b.st='intro';b.t=0;b.x=G.cam+W-110;b.y=(FY0+FY1)/2;b.face=-1;G.buti=mkButi(b);G.briDown=0}}}
 {const _b=bigMsg;bigMsg=function(s,t){if((s==='¡COMPETIDORES A LA VISTA!'||s==='¡NO REP A LA VISTA!')&&G.lvl===3&&G.en.some(e=>e.type==='bri'&&!e.st0))s='¡'+BRI_NAME+' ENTRA EN PISTA!';return _b(s,t)}}
@@ -3616,6 +3624,17 @@ function drawBriKO(g,k){const F=ELITE.fr.bri.dead,f=F[Math.min(15,Math.floor(k.t
 {const _d=drawEntity;drawEntity=function(g,e){if(e.kind==='buti'){if(G.buti)drawButi(g,G.buti);return}if(e.kind==='brik'){if(G.briKO)drawBriKO(g,G.briKO);return}return _d(g,e)}}
 // no se sale del nivel hasta que Briatore haya dicho su última frase
 function lvlExitHold(){return G.lvl===3&&!!(G.talk||G.briKO&&!(G.talked&&G.talked.brid))}
+
+// FASE 3 (último tercio): grita «¡MOUREEE!» y Moure cruza corriendo la pista con refuerzos detrás (2 la primera vez, 3 la segunda)
+const MOURE_LINES=['¡YA VOY, JEFE! ¡REFUERZOS!','¡QUE NO PASEN, QUE NO PASEN!'];
+function mourerun(n){const y=FY0+6;G.mrun={x:G.cam+W+40,y,t:0,sh:2,txt:MOURE_LINES[n%2]};G.mrun.ent={kind:'mrun',x:G.mrun.x,y,hp:0,bt:-1};G.crates.push(G.mrun.ent);
+  const L=['k1','k2','k3'].sort(()=>Math.random()-.5);for(let i=0;i<2+n;i++){const e=mkJudge(L[i%3],G.cam+W+90+i*45,rr(FY0+20,FY1-6),G.cat);e.face=-1;G.en.push(e)}}
+{const _u=updStreet;updStreet=function(dt){_u(dt);const m=G&&G.mrun;if(!m||G.talk)return;m.t+=dt;m.sh=Math.max(0,m.sh-dt);m.x-=270*dt;m.ent.x=m.x;
+  if(m.x<G.cam-70){G.crates=G.crates.filter(c=>c!==m.ent);G.mrun=null}}}
+{const _d=drawEntity;drawEntity=function(g,e){if(e.kind==='mrun'){const m=G.mrun;if(!m||!okB(MOURE_IMG))return;const F=MOURE.fr.run,f=F[Math.floor(m.t*11)%4],u=MOURE.u,x=Math.round(m.x),y=Math.round(m.y);
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y,18,4,0,0,7);g.fill();
+  g.save();g.translate(x,y);g.scale(-1,1);g.drawImage(MOURE_IMG,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore();
+  if(m.sh>0)drawBubble(g,m.txt,x-10,y-96,-1,bubLife(m.sh,2));return}return _d(g,e)}}
 /* ===== MODOS DE JUEGO: historia (nivel 1 → nivel 2 → final) o elegir nivel ===== */
 {$('#modeStory').addEventListener('click',()=>{PLAY.mode='story';PLAY.start='1';PLAY.from='mode';menuGo('s1')});
  $$('#menu [data-lvl]').forEach(b=>b.addEventListener('click',()=>{PLAY.mode='lvl';PLAY.start=b.dataset.lvl;PLAY.from='lvl';menuGo('s1')}))}
