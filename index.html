@@ -1805,7 +1805,7 @@ function updStreet(dt){
   const w=WAVES[G.waveI];
   if(w&&G.lockX==null&&lead.x>=w.x&&!(G.tut&&!G.tut.done)){spawnWave(w);G.waveI++}
   if(G.lockX!=null&&G.en.length===0){G.lockX=null;G.cleared=true;G.goT=0;SFX.go();bigMsg(G.waveI>=WAVES.length?'¡CALLE LIBRE! AL BOX →':'¡GO! →',1.4)}
-  if(G.waveI>=WAVES.length&&G.lockX==null&&G.en.length===0&&lead.x>=DOOR_X)enterBox();
+  if(G.waveI>=WAVES.length&&G.lockX==null&&G.en.length===0&&lead.x>=DOOR_X&&!(typeof lvlExitHold==='function'&&lvlExitHold()))enterBox();
   // cámara
   const tgt=Math.max(G.cam,lead.x-250+lead.face*30);const maxC=G.lockX!=null?G.lockX:LEVEL_W-W;
   G.cam=Math.min(maxC,lerp(G.cam,tgt,1-Math.pow(.002,dt)));
@@ -3537,20 +3537,23 @@ function updBri(e,dt){const L=G.cam,R=G.cam+W,d=G.buti;e.shout=Math.max(0,(e.sho
           if(ddx>4&&ddx<64&&Math.abs(a.y-e.y)<16){hurtAth(a,last?e.dmg+7:e.dmg,e.face,last?.75:undefined);SFX.hit();if(last){G.shake=Math.max(G.shake,.25);ftext(a.x,a.y-86,'¡RELOJAZO!','#ffd23f',12)}}}});
       if(e.t>=BRI_PC){e.st='walk';e.t=0;e.cd=rr(1.1,1.8)}break;
   }
-  e.x=clamp(e.x+e.vx*dt,L+20,R-20);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
+  e.x=clamp(e.x+e.vx*dt,L+80,R-80);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
 }
 {const _f=e2Frame;e2Frame=function(e){if(e.type==='bri'){const t=e.t||0;
   if(e.st==='pc')return['pc',Math.min(15,Math.floor(t/BRI_PC*16))];
   if(e.st==='cmd')return['cmd',Math.min(15,Math.floor(t/BRI_CMD*16))];
   if(e.st==='intro')return['intro',Math.min(15,Math.floor(t/2.4*16))];}
   return _f(e)}}
-{const _d=drawElite;drawElite=function(g,e){if(e.type==='bri'&&e.st==='dying')return;_d(g,e);if(e.type==='bri'&&e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-124),e.face||1,e.shout)}}
+{const _d=drawElite;drawElite=function(g,e){if(e.type==='bri'&&(e.st==='dying'||G.briDown))return;_d(g,e);if(e.type==='bri'&&e.shout>0&&e.st!=='dying')drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-124),e.face||1,e.shout)}}
 // la entrada: aparece a la derecha y se presenta (las gafas, el cuello, los brazos) antes de hablar
 {const _sw=spawnWave;spawnWave=function(w){_sw(w);const b=G.en.find(e=>e.type==='bri'&&!e.st0);if(b){b.st0=1;b.st='intro';b.t=0;b.x=G.cam+W-110;b.y=(FY0+FY1)/2;b.face=-1;G.buti=mkButi(b);G.briDown=0}}}
 {const _b=bigMsg;bigMsg=function(s,t){if((s==='¡COMPETIDORES A LA VISTA!'||s==='¡NO REP A LA VISTA!')&&G.lvl===3&&G.en.some(e=>e.type==='bri'&&!e.st0))s='¡'+BRI_NAME+' ENTRA EN PISTA!';return _b(s,t)}}
 // derrota: cae de rodillas y boca abajo; el cuerpo se queda en la pista
-{const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='bri'&&!G.briDown){G.briDown=1;G.briKO={x:e.x,y:e.y,face:e.face||1,t:0};G.briKO.ent={kind:'brik',x:e.x,y:e.y,hp:0,bt:-1};G.crates.push(G.briKO.ent);e.vx=0;
-  bigMsg('¡'+BRI_NAME+' HA CAÍDO!',2);musicDuck(.3,2200);G.shake=Math.max(G.shake,.4);const d=G.buti;if(d&&d.st!=='fly')butiFree(d,'flee')}}}
+{const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='bri')briKOStart(e,0)}}
+function briKOStart(e,t0){if(G.briDown)return;{G.briDown=1;G.briKO={x:e.x,y:e.y,face:e.face||1,t:t0};G.briKO.ent={kind:'brik',x:e.x,y:e.y,hp:0,bt:-1};G.crates.push(G.briKO.ent);e.vx=0;
+  bigMsg('¡'+BRI_NAME+' HA CAÍDO!',2);musicDuck(.3,2200);G.shake=Math.max(G.shake,.4);const d=G.buti;if(d&&d.st!=='fly')butiFree(d,'flee')}}
+// si cae con una patada o un lanzamiento (sin pasar por killE) también cuenta: se queda tumbado boca abajo
+{const _u=updStreet;updStreet=function(dt){_u(dt);if(!G||G.lvl!==3||G.briDown)return;const e=G.en.find(o=>o.type==='bri'&&(o.kill||o.dead||o.st==='dying'));if(e){e.dead=true;briKOStart(e,1.25)}}}
 function butiFree(d,st){if(d.tg)d.tg.butiOn=0;d.tg=null;d.st=st||'ret';d.t=0}
 function butiKick(d,dir,who){if(!d||d.st==='fly'||d.st==='gone')return;if(d.tg)d.tg.butiOn=0;d.tg=null;d.st='fly';d.t=0;d.vx=dir*260;d.vz=280;d.z=Math.max(d.z,4);SFX.hit();G.hitstop=.05;
   burst(d.x,d.y-14,8,'#ffd23f',150);ftext(d.x,d.y-40,'¡CAÍN!','#ffd23f',11);G.score+=50}
@@ -3594,6 +3597,8 @@ function drawButi(g,d){const f=butiFrame(d),img=eliteImg(f);if(!img)return;const
 function drawBriKO(g,k){const F=ELITE.fr.bri.dead,f=F[Math.min(15,Math.floor(k.t/1.6*16))],img=eliteImg(f);if(!img)return;const u=ELITE.u;
   g.save();g.translate(Math.round(k.x),Math.round(k.y));g.scale(k.face,1);g.drawImage(img,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore()}
 {const _d=drawEntity;drawEntity=function(g,e){if(e.kind==='buti'){if(G.buti)drawButi(g,G.buti);return}if(e.kind==='brik'){if(G.briKO)drawBriKO(g,G.briKO);return}return _d(g,e)}}
+// no se sale del nivel hasta que Briatore haya dicho su última frase
+function lvlExitHold(){return G.lvl===3&&!!(G.talk||G.briKO&&!(G.talked&&G.talked.brid))}
 /* ===== MODOS DE JUEGO: historia (nivel 1 → nivel 2 → final) o elegir nivel ===== */
 {$('#modeStory').addEventListener('click',()=>{PLAY.mode='story';PLAY.start='1';PLAY.from='mode';menuGo('s1')});
  $$('#menu [data-lvl]').forEach(b=>b.addEventListener('click',()=>{PLAY.mode='lvl';PLAY.start=b.dataset.lvl;PLAY.from='lvl';menuGo('s1')}))}
