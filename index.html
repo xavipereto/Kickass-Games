@@ -292,6 +292,15 @@ html:fullscreen,html:fullscreen body{background:#000;width:100%;height:100%}
 .pbody.cards .opt .ic img.por{width:clamp(38px,13vh,110px)}
 .pbody.cards .opt>span small{font-size:clamp(11px,2vh,15px)}
 .tiny{font-size:clamp(12px,2vh,14px);color:var(--mut);margin:2px 0 0}
+.prize{display:grid;gap:4px;margin-top:2px;padding-top:6px;border-top:1px dashed #19e3ff55}
+.prize .plbl{font-weight:700;font-size:clamp(12px,2.2vh,15px);color:var(--cyan)}
+.prize .plbl small{font-weight:400;color:var(--mut)}
+#mail{font-size:16px;padding:7px 10px}
+.pok{display:flex;gap:8px;align-items:flex-start;font-size:clamp(11px,1.9vh,13px);color:var(--mut);line-height:1.25;cursor:pointer}
+.pok input{width:18px;height:18px;margin:1px 0 0;flex:0 0 auto;accent-color:var(--yel,#ffc83d);cursor:pointer}
+#mailErr:empty{display:none}
+[data-p="s1"] .pbody.one{overflow:auto}
+@media (max-height:500px){#teamErr:empty{display:none}[data-p="s1"] .pbody.one{gap:3px}[data-p="s1"] #team{padding:6px 10px;font-size:18px}[data-p="s1"] .hint{font-size:12px}.prize{gap:3px;padding-top:4px}#mail{padding:5px 9px}.pok{font-size:11px}}
 .hub{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(6px,2vh,16px)}
 .hbtn{background:none;border:0;cursor:pointer;padding:2px 10px;transition:transform .1s;display:flex;align-items:center;justify-content:center}
 .hbtn img{height:clamp(30px,8vh,60px);width:auto;display:block;filter:drop-shadow(0 3px 0 #000)}
@@ -546,6 +555,12 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
             <div class="hint"><span>De 2 a 24 caracteres</span><span id="teamCount">0/24</span></div>
             <div id="teamErr" class="err" role="alert"></div>
             <p class="tiny">&#9888; Aparecerá en el ranking público. No escribas datos personales.</p>
+            <div class="prize">
+              <label for="mail" class="plbl">&#127942; Email para premios <small>(opcional · no se publica)</small></label>
+              <input id="mail" type="text" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="80" placeholder="tu@email.com" enterkeyhint="next">
+              <label class="pok"><input id="mailOk" type="checkbox"><span>Acepto que la organización de KickAss Games use este email solo para avisar al equipo si gana un premio del ranking.</span></label>
+              <div id="mailErr" class="err" role="alert"></div>
+            </div>
           </div>
         </section>
         <!-- 2 · pareja -->
@@ -2944,7 +2959,8 @@ function fillCtrlPage(){const T=app.classList.contains('touch'),cards=$$('#menu 
   cards[0].innerHTML=H3('m_calle','Calle')+'<div class="keys">'+k(street)+'</div>';
   cards[1].innerHTML=H3('m_wod','WOD')+'<div class="keys">'+k(wod)+'</div>'+H3('m_general','General')+'<div class="keys">'+k(gen)+'</div><p class="tiny">'+(T?'Con teclado o mando físico los controles cambian solos.':'También puedes jugar con un mando (X barra/lanzar · Y patada · A salto · B esquiva · R1 cambio · L1 foto).')+' Tu pareja pelea sola a tu lado.</p>'}
 function menuNext(){const si=MSTEPS.indexOf(mPage);if(si<0)return;
-  if(si===0){const n=$('#team').value.replace(/\s+/g,' ').trim();if(n.length<2){$('#teamErr').textContent='El nombre del equipo necesita al menos 2 caracteres.';$('#team').focus();return}}
+  if(si===0){const n=$('#team').value.replace(/\s+/g,' ').trim();if(n.length<2){$('#teamErr').textContent='El nombre del equipo necesita al menos 2 caracteres.';$('#team').focus();return}
+    const pm=prizeMail();if(pm.err){$('#mailErr').textContent=pm.err;$('#mail').focus();return}}
   if(si<MSTEPS.length-1)menuGo(MSTEPS[si+1]);else $('#form').requestSubmit?$('#form').requestSubmit():$('#play').click()}
 function menuBack(){const si=MSTEPS.indexOf(mPage);menuGo(si>0?MSTEPS[si-1]:(typeof PLAY!=='undefined'&&PLAY.from)||'hub')}
 /* ----- pantalla de derrota estilo lucha (retrato + frase) ----- */
@@ -3082,13 +3098,31 @@ async function fbSave(rec){
   if(!r.ok&&(r.status===400||r.status===403)){const F2=Object.assign({},F);delete F2.mode;r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F2})});if(r.ok)console.warn('ranking: las reglas de Firebase no aceptan el campo mode')}
   if(!r.ok)throw new Error('fb '+r.status);
   const d=await r.json();return d.name.split('/').pop()}
+/* ===== EMAIL PARA PREMIOS =====
+   Opcional. Nunca se guarda en 'scores' (que se lee en público): va a la colección 'contacts',
+   con el MISMO id que la puntuación, y las reglas de Firebase solo permiten crearla (nadie puede leerla desde el juego).
+   Para ver a quién premiar: consola de Firebase → Firestore → contacts. */
+let PRIZE_MAIL='';
+const MAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+function prizeMail(){const i=$('#mail'),c=$('#mailOk');if(!i)return{mail:''};
+  const m=i.value.trim().toLowerCase();if(!m)return{mail:''};
+  if(m.length>80||!MAIL_RE.test(m))return{err:'Revisa el email: parece que no es correcto.'};
+  if(!c||!c.checked)return{err:'Marca la casilla para optar a premios, o deja el email vacío.'};
+  return{mail:m}}
+async function fbSaveContact(id,rec,mail){
+  const F={email:{stringValue:mail},team:{stringValue:String(rec.team).slice(0,24)},pair:{stringValue:String(rec.pair)},cat:{stringValue:String(rec.cat)},
+    mode:{stringValue:String(rec.mode||'story')},score:{integerValue:String(Math.max(0,Math.round(rec.score)))},done:{booleanValue:!!rec.done},
+    consent:{booleanValue:true},at:{integerValue:String(Date.now())}};
+  const r=await fetch(fbURL('/contacts?documentId='+encodeURIComponent(id)),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});
+  if(!r.ok)throw new Error('fb contact '+r.status)}
 let fbTimer=null;
 async function fbRefresh(){try{RK.rows=await fbLoad();RK.mode='shared'}catch(e){if(RK.mode!=='shared')RK.mode='local'}refreshRank()}
 {const _init=initRanking,_sub=submitScore;
   initRanking=async function(){if(!FB_ON())return _init();RK.mode='loading';refreshRank();await fbRefresh();
     if(!fbTimer)fbTimer=setInterval(()=>{if(mode==='menu'||mode==='results')fbRefresh()},30000)};
   submitScore=async function(rec){if(!FB_ON())return _sub(rec);const msg=$('#rSave');
-    try{const id=await fbSave(rec);G.rkKey=id;msg.textContent='Guardado en el ranking general.';await fbRefresh();
+    try{const id=await fbSave(rec);G.rkKey=id;msg.textContent='Guardado en el ranking general.';
+      if(PRIZE_MAIL)fbSaveContact(id,rec,PRIZE_MAIL).then(()=>{if(G.rkKey===id)msg.textContent+=' 🏆 Optáis a premio: os escribiremos si ganáis.'}).catch(e=>console.warn('premios: no se pudo guardar el email',e));await fbRefresh();
       if(!RK.rows.some(r=>r.key===id))msg.textContent='Guardado en el ranking general (tu mejor marca de este equipo sigue siendo más alta).'}
     catch(e){saveLocal(Object.assign({key:'loc'+rec.at},rec));G.rkKey='loc'+rec.at;msg.textContent='Sin conexión con el ranking general: se guardó solo en este móvil.';refreshRank()}};
   // al abrir el ranking del menú, refrescar
@@ -4215,12 +4249,16 @@ function startGame(o){
 function initUI(){
   const form=$('#form'),inp=$('#team');
   try{inp.value=(localStorage.getItem('nrb_team')||'').slice(0,24)}catch(e){}
+  try{$('#mail').value=(localStorage.getItem('nrb_mail')||'').slice(0,80);$('#mailOk').checked=localStorage.getItem('nrb_mailok')==='1'}catch(e){}
+  $('#mail').addEventListener('input',()=>{$('#mailErr').textContent=''});$('#mailOk').addEventListener('change',()=>{$('#mailErr').textContent=''});
   $('#teamCount').textContent=inp.value.length+'/24';
   inp.addEventListener('input',()=>{$('#teamCount').textContent=inp.value.length+'/24';$('#teamErr').textContent=''});
   form.addEventListener('submit',e=>{
     e.preventDefault();
     const name=inp.value.replace(/[\u0000-\u001f]/g,'').replace(/\s+/g,' ').trim();
     if(name.length<2||name.length>24){menuGo('s1');$('#teamErr').textContent=name.length<2?'El nombre del equipo necesita al menos 2 caracteres.':'Máximo 24 caracteres.';inp.focus();return}
+    const pm=prizeMail();if(pm.err){menuGo('s1');$('#mailErr').textContent=pm.err;$('#mail').focus();return}
+    PRIZE_MAIL=pm.mail;try{if(pm.mail){localStorage.setItem('nrb_mail',pm.mail);localStorage.setItem('nrb_mailok','1')}else{localStorage.removeItem('nrb_mail');localStorage.removeItem('nrb_mailok')}}catch(e){}
     startGame({team:name,pair:form.elements.pair.value,cat:form.elements.cat.value,photog:form.elements.photog.value==='1'});
   });
   $('#bPause').addEventListener('click',()=>{audio();togglePause()});
