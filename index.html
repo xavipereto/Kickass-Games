@@ -3679,7 +3679,7 @@ function mourerun(n){const y=FY0+6;G.mrun={x:G.cam+W+40,y,t:0,sh:2,txt:MOURE_LIN
    Calculadorazo (2 golpes + golpe de arriba abajo) y CÁLCULO: lanza una operación con 3 respuestas;
    se contesta tocando la respuesta o con las teclas 1·2·3. Acierto → Edu se queda descolocado. Fallo o tiempo → lluvia de números. */
 const EDU_NAME='EDU EL MATEMÀTIC',EDU_X=2200,EDU_ARMOR=new Set(['pc','mt','mtw']);
-JT.edu={hp:260,spd:50,dmg:12,reach:32,wpn:'none',s:1,val:2000,armor:false,mute:true,nograb:true};JPAL.edu=JPAL.base;
+JT.edu={hp:300,spd:50,dmg:12,reach:32,wpn:'none',s:1,val:2000,armor:false,mute:true,nograb:true};JPAL.edu=JPAL.base;
 PORTRAITS.edu.expr=true; // 0 aburrido · 1 explicando · 2 furioso · 3 chulo con la calculadora
 TALKS.edu={name:EDU_NAME,pages:[
   {e:0,f:0,txt:'Bon dia. Si veniu a queixar-vos de les puntuacions, ja podeu fer mitja volta.'},
@@ -3703,7 +3703,9 @@ function updEdu(e,dt){const L=G.cam,R=G.cam+W,tg=nearestAth(e);e.shout=Math.max(
     case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*50;
       const mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0,my=Math.abs(dy)>4?Math.sign(dy)*.8:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
       e.shCd=(e.shCd==null?3:e.shCd)-dt;if(e.shCd<=0&&!G.bigT){e.shCd=rr(5,9);e.shoutTxt=EDU_SH[Math.floor(Math.random()*EDU_SH.length)];e.shout=1.6}
-      if(e.mtCd<=0&&!G.quiz&&athUp(tg)&&Math.abs(dx)<330){e.st='mt';e.t=0;e.vx=e.vy=0;e.face=dx>0?1:-1;e.qtg=tg;e.shoutTxt='Calcula això!';e.shout=1.4;break}
+      // además de cada pocos segundos, un cálculo seguro al bajar del 70 % y del 35 % de vida: así siempre hay al menos 2-3 por pelea
+      const th=(e.qTh=e.qTh||[.7,.35]).length&&e.hp<=e.maxHp*e.qTh[0];if(th)e.qTh.shift();
+      if((th||e.mtCd<=0&&Math.abs(dx)<330)&&!G.quiz&&athUp(tg)){e.st='mt';e.t=0;e.vx=e.vy=0;e.face=dx>0?1:-1;e.qtg=tg;e.shoutTxt='Calcula això!';e.shout=1.4;break}
       if(e.cd<=0&&Math.abs(dx)<66&&Math.abs(dy)<14&&athUp(tg)){e.st='pc';e.t=0;e.vx=e.vy=0;e.pcHit=[]}}break;
     case 'pc':e.vx=e.vy=0;if(e.t<.25)e.face=tg.x>e.x?1:-1;
       EDU_HIT.forEach((ht,i)=>{if(e.t<ht||e.pcHit.includes(i))return;e.pcHit.push(i);SFX.swing();const last=i===EDU_HIT.length-1;
@@ -3711,7 +3713,7 @@ function updEdu(e,dt){const L=G.cam,R=G.cam+W,tg=nearestAth(e);e.shout=Math.max(
           if(ddx>4&&ddx<62&&Math.abs(a.y-e.y)<16){hurtAth(a,last?e.dmg+6:e.dmg,e.face,last?.7:undefined);SFX.hit();if(last){G.shake=Math.max(G.shake,.22);ftext(a.x,a.y-86,'¡ERROR!','#ff5050',12)}}}});
       if(e.t>=EDU_PC){e.st='walk';e.t=0;e.cd=rr(1.1,1.9)}break;
     case 'mt':e.vx=e.vy=0;if(e.t>=EDU_MTGO){e.st='mtw';e.t=0;quizOpen(e,e.qtg&&athUp(e.qtg)?e.qtg:tg,low)}break;
-    case 'mtw':e.vx=e.vy=0;if(!G.quiz){e.st=e.qok?'stun':'walk';e.t=0;e.cd=.6;e.mtCd=rr(5.5,8.5)}break;
+    case 'mtw':e.vx=e.vy=0;if(!G.quiz){e.st=e.qok?'stun':'walk';e.t=0;e.cd=.6;e.mtCd=rr(4,6)}break;
     case 'stun':e.vx=e.vy=0;if(e.t>=1.6){e.st='walk';e.t=0}break;
   }
   e.x=clamp(e.x+e.vx*dt,L+30,R-30);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
@@ -3758,7 +3760,7 @@ window.addEventListener('keydown',ev=>{if(!G||!G.quiz||mode!=='play')return;cons
   if(d.ph==='done'&&d.lock!=null){d.lock=null;G.lockX=null}
   if(d.ph==='wait'&&G.waveI>=3&&G.en.length===0&&lead.x>EDU_X-260&&G.cam>EDU_X-W+60){d.ph='talk';startTalk('edu')}
   else if(d.ph==='talk'){d.ph='rise';d.t=0}
-  else if(d.ph==='rise'&&d.t>=.55){d.ph='fight';d.t=0;d.lock=Math.round(EDU_X-W/2-40);G.lockX=d.lock;const e=mkJudge('edu',EDU_X-70,d.y,G.cat);e.face=-1;e.cd=1;e.mtCd=3;G.en.push(e);
+  else if(d.ph==='rise'&&d.t>=.55){d.ph='fight';d.t=0;d.lock=Math.round(EDU_X-W/2-40);G.lockX=d.lock;const e=mkJudge('edu',EDU_X-70,d.y,G.cat);e.face=-1;e.cd=1;e.mtCd=1.6;G.en.push(e);
     burst(EDU_X-40,d.y-40,18,'#fffbe8',220);burst(EDU_X-40,d.y-40,8,'#ffd23f',200);G.shake=Math.max(G.shake,.3);SFX.boom();bigMsg('¡'+EDU_NAME+'!',1.6)}
   else if(d.ph==='fight'){G.lockX=d.lock; // la pelea es en toda la pantalla (también detrás de la mesa), pero la cámara no avanza hasta acabar
 const e=G.en.find(o=>o.type==='edu');if(!G.eduDown&&(!e||e.kill||e.dead||e.st==='dying')){if(e)e.dead=true;eduKO(e||{x:EDU_X-70,y:d.y,face:-1})}
