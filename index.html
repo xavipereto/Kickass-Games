@@ -3712,7 +3712,7 @@ function updEdu(e,dt){const L=G.cam,R=G.cam+W,tg=nearestAth(e);e.shout=Math.max(
     case 'mtw':e.vx=e.vy=0;if(!G.quiz){e.st=e.qok?'stun':'walk';e.t=0;e.cd=.6;e.mtCd=rr(5.5,8.5)}break;
     case 'stun':e.vx=e.vy=0;if(e.t>=1.6){e.st='walk';e.t=0}break;
   }
-  e.x=clamp(e.x+e.vx*dt,L+30,Math.min(R-30,EDU_X-50));e.y=clamp(e.y+e.vy*dt,FY0,FY1);
+  e.x=clamp(e.x+e.vx*dt,L+30,R-30);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
 }
 {const _f=e2Frame;e2Frame=function(e){if(e.type==='edu'){const t=e.t||0;
   if(e.st==='pc')return['pc',Math.min(15,Math.floor(t/EDU_PC*16))];
@@ -3751,13 +3751,15 @@ window.addEventListener('keydown',ev=>{if(!G||!G.quiz||mode!=='play')return;cons
 {const _u=updStreet;updStreet=function(dt){_u(dt);if(!G||G.lvl!==3)return;const Q=G.quiz;
   if(Q&&!G.talk){Q.t+=dt;const el=quizUI();el.querySelector('#eqT').style.width=Math.max(0,100*(1-Q.t/Q.max))+'%';if(Q.t>=Q.max||!G.en.includes(Q.e)||Q.e.st==='dying')quizAnswer(null)}
   const d=G.edu;if(!d||G.talk)return;d.t+=dt;
-  if(d.ph!=='done')for(const a of G.ath)if(a.x>EDU_X-75){a.x=EDU_X-75;if(a.vx>0)a.vx=0}
+  if(d.ph==='wait'||d.ph==='talk'||d.ph==='rise')for(const a of G.ath)if(a.x>EDU_X-75){a.x=EDU_X-75;if(a.vx>0)a.vx=0}
   const lead=G.ath[0];
+  if(d.ph==='done'&&d.lock!=null){d.lock=null;G.lockX=null}
   if(d.ph==='wait'&&G.waveI>=3&&G.en.length===0&&lead.x>EDU_X-260&&G.cam>EDU_X-W+60){d.ph='talk';startTalk('edu')}
   else if(d.ph==='talk'){d.ph='rise';d.t=0}
-  else if(d.ph==='rise'&&d.t>=.55){d.ph='fight';d.t=0;const e=mkJudge('edu',EDU_X-70,d.y,G.cat);e.face=-1;e.cd=1;e.mtCd=3;G.en.push(e);
+  else if(d.ph==='rise'&&d.t>=.55){d.ph='fight';d.t=0;d.lock=Math.round(EDU_X-W/2-40);G.lockX=d.lock;const e=mkJudge('edu',EDU_X-70,d.y,G.cat);e.face=-1;e.cd=1;e.mtCd=3;G.en.push(e);
     burst(EDU_X-40,d.y-40,18,'#fffbe8',220);burst(EDU_X-40,d.y-40,8,'#ffd23f',200);G.shake=Math.max(G.shake,.3);SFX.boom();bigMsg('¡'+EDU_NAME+'!',1.6)}
-  else if(d.ph==='fight'){const e=G.en.find(o=>o.type==='edu');if(!G.eduDown&&(!e||e.kill||e.dead||e.st==='dying')){if(e)e.dead=true;eduKO(e||{x:EDU_X-70,y:d.y,face:-1})}
+  else if(d.ph==='fight'){G.lockX=d.lock; // la pelea es en toda la pantalla (también detrás de la mesa), pero la cámara no avanza hasta acabar
+const e=G.en.find(o=>o.type==='edu');if(!G.eduDown&&(!e||e.kill||e.dead||e.st==='dying')){if(e)e.dead=true;eduKO(e||{x:EDU_X-70,y:d.y,face:-1})}
     if(G.eduKO){G.eduKO.t+=dt;if(G.eduKO.t>=2&&!(G.talked&&G.talked.edud))startTalk('edud');else if(G.talked&&G.talked.edud){d.ph='done';bigMsg('¡GO! →',1.4);SFX.go&&SFX.go()}}}}}
 function eduKO(e){G.eduDown=1;quizAnswer(null);G.eduKO={x:e.x,y:e.y,face:e.face||-1,t:0};G.eduKO.ent={kind:'eduk',x:e.x,y:e.y,hp:0,bt:-1};G.crates.push(G.eduKO.ent);musicDuck(.3,1800);G.shake=Math.max(G.shake,.3)}
 {const _k=killE;killE=function(e,dir){_k(e,dir);if(e.type==='edu'&&!G.eduDown){e.dead=true;eduKO(e)}}}
@@ -3773,6 +3775,8 @@ function drawEduKO(g,k){const F=ELITE.fr.edu.dead,f=F[Math.min(15,Math.floor(k.t
 {const _d=drawEntity;drawEntity=function(g,e){if(e.kind==='edesk'){if(G.edu)drawEduDesk(g,G.edu);return}if(e.kind==='eduk'){if(G.eduKO)drawEduKO(g,G.eduKO);return}return _d(g,e)}}
 // el bocadillo del cálculo se esconde si se pausa o se sale de la partida
 setInterval(()=>{if(quizEl&&quizEl.style.display!=='none'&&(mode!=='play'||!G||!G.quiz))quizClose()},200);
+
+{const _b=bigMsg;bigMsg=function(m,t){if(G&&G.lvl===3&&G.edu&&G.edu.ph==='fight'&&m==='¡GO! →')return;return _b(m,t)}}
 /* ===== MODOS DE JUEGO: historia (nivel 1 → nivel 2 → final) o elegir nivel ===== */
 {$('#modeStory').addEventListener('click',()=>{PLAY.mode='story';PLAY.start='1';PLAY.from='mode';menuGo('s1')});
  $$('#menu [data-lvl]').forEach(b=>b.addEventListener('click',()=>{PLAY.mode='lvl';PLAY.start=b.dataset.lvl;PLAY.from='lvl';menuGo('s1')}))}
