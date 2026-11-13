@@ -4016,7 +4016,7 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
   if(a.jpR!=='throw')a.inv=Math.max(a.inv||0,.1); // nadie te pega mientras chocas y bailas
   if(a.jpR==='hf'){
     if(t>=.2&&!a.done){a.done=true;G.jp.hfT=G.run;const hx=(a.x+G.jp.x)/2,hy=a.y-66;burst(hx,hy,18,'#ffd23f',220);ring(hx,hy,34);
-      G.shake=Math.max(G.shake,.15);G.hitstop=.06;SFX.hit();ftext(hx,hy-16,'¡CHOCA ESOS CINCO!','#ffd23f',11)}
+      G.shake=Math.max(G.shake,.15);G.hitstop=.06;SFX.hit();jpMusStart();ftext(hx,hy-16,'¡CHOCA ESOS CINCO!','#ffd23f',11)}
     if(t>=JP_HF&&!a.party){a.party=true;jpParty();G.jp.sc='cel';G.jp.t=0}
     if(t>=JP_HF+JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null;a.party=false}}
   else if(a.jpR==='dance'){if(t>=JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null}}
@@ -4039,6 +4039,18 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
 {const _u=updJudge;updJudge=function(e,dt){if(e.st!=='dance')return _u(e,dt);
   e.t+=dt;e.bobT=(e.bobT||0)+dt;e.flash=Math.max(0,(e.flash||0)-dt);e.inv=Math.max(0,(e.inv||0)-dt);e.shout=0;e.vx=e.vy=0;
   if(e.t>=e.danceT){e.st='walk';e.t=0;e.cd=Math.max(e.cd||0,.6)}}}
+/* --- música de la fiesta (music_party.mp3, 21,5 s): arranca al chocar la mano con el redoble y el drop cae justo en
+   «¡MODO FIESTA!»; la de la playa se calla mientras suena y vuelve al acabarse el poder (con un frenazo de disco) --- */
+const JPM={buf:null,src:null,g:null,ld:false};
+function jpMusLoad(){if(JPM.buf||JPM.ld||!AC)return;JPM.ld=true;fetch('music_party.mp3').then(r=>r.arrayBuffer()).then(a=>AC.decodeAudioData(a)).then(b=>{JPM.buf=b}).catch(()=>{JPM.ld=false})}
+{const _s=setLevel3;setLevel3=function(){_s();jpMusLoad()}}
+function jpMusStart(){jpMusLoad();if(!AC||!JPM.buf||JPM.src)return;try{const s=AC.createBufferSource(),g=AC.createGain();s.buffer=JPM.buf;g.gain.value=.13;s.connect(g);g.connect(busOut('mu'));
+  s.onended=()=>{if(JPM.src===s){JPM.src=null;JPM.g=null;musicDuck(1,10)}};s.start(0);JPM.src=s;JPM.g=g;musicDuck(0,60000)}catch(e){}}
+function jpMusStop(){const s=JPM.src,g=JPM.g;if(!s)return;JPM.src=null;JPM.g=null;try{const t=AC.currentTime;
+  s.playbackRate.setValueAtTime(1,t);s.playbackRate.linearRampToValueAtTime(.08,t+.6);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.65);s.stop(t+.7)}catch(e){}
+  musicDuck(1,10)}
+// se corta si se acaba el poder, si salís del nivel o de la partida
+{const _d=draw;draw=function(){_d();if(JPM.src&&!(jpOn()&&(mode==='play'||mode==='pause')&&(G.jp.n>0||G.jp.sc==='hf')))jpMusStop()}}
 /* --- la escena: sale de la cabina → micro → señala → espera el choque → celebra → vuelve a pinchar --- */
 function jpWalk(J,tx,ty,dt){const dx=tx-J.x,dy=ty-J.y,d=Math.hypot(dx,dy);if(d<2){J.x=tx;J.y=ty;J.walk=false;return true}
   const k=Math.min(1,JP_SPD*dt/d);J.x+=dx*k;J.y+=dy*k;J.walk=true;if(Math.abs(dx)>1)J.face=dx>0?1:-1;J.wT=(J.wT||0)+dt;return false}
