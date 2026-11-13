@@ -3980,6 +3980,87 @@ function eliteVoice(e,kill){if(!/^(e[1-5])$/.test(e.type)||e.clone&&!kill)return
   if(G.run-(e.ouchT||-9)<.55)return;e.ouchT=G.run;smpPlay(f?'auf':'aum',.85,rr(.85,.95))}
 {const _h=hurtE;hurtE=function(e,dmg,dir,kd,kb){const hp=e.hp,r=_h(e,dmg,dir,kd,kb);if(e.hp<hp&&e.hp>0&&e.st!=='dying')eliteVoice(e,false);return r}}
 {const _k=killE;killE=function(e,dir){if(!e.vk){e.vk=1;eliteVoice(e,true)}return _k(e,dir)}}
+/* ===== NIVEL 3: JOANPI, el DJ de la FCL =====
+   Su cabina (carpa + mesa con faldón) está en la pista. Pulsas junto a ella y le chocas la mano: brillo multicolor, baile
+   y MODO FIESTA: durante JP_T s el botón de barra lanza notas musicales que ponen a bailar a los competidores.
+   Los jefes son inmunes. Joanpi sale una sola vez. */
+const JPD={"u":0.5,"fr":{"tent":{"t":[[0,0,350,235,175.0,235,0]]},"joanpi":{"dj":[[352,0,125,124,62.3,124.4,0],[479,0,125,124,62.3,124.4,0],[606,0,125,124,62.3,124.4,0]]},"table":{"t":[[733,0,168,55,84.0,55,0]]},"k2":{"dance":[[201,0,99,189,47.1,189.0,1],[1081,0,122,182,72.1,182.5,1],[860,0,119,185,98.0,184.8,1],[758,0,100,186,49.8,185.6,1],[302,0,95,189,34.3,189.0,1],[399,0,121,189,68.6,189.0,1],[630,0,126,187,105.3,187.5,1],[0,0,103,191,54.1,191.4,1]]},"k1":{"dance":[[105,0,94,190,46.0,189.7,1],[1407,0,102,181,55.5,180.5,1],[1718,0,118,180,105.9,179.7,1],[981,0,98,185,46.8,185.3,1],[1511,0,96,181,56.5,180.9,1],[1609,0,107,181,47.5,180.9,1],[1295,0,110,182,13.4,181.7,1],[522,0,106,189,48.7,189.3,1]]},"k3":{"dance":[[1205,0,88,182,46.8,182.0,1],[109,193,108,174,66.7,173.9,1],[443,193,107,173,93.1,173.4,1],[219,193,109,174,67.6,174.3,1],[1838,0,82,176,53.9,175.6,1],[330,193,111,174,68.9,174.3,1],[1922,0,117,176,94.7,175.6,1],[0,193,107,175,51.4,175.1,1]]},"atl_dumb":{"jp":[[1731,193,108,143,60.4,143.1,1],[1102,193,131,146,60.5,146.1,1],[1841,193,117,142,65.2,142.0,1],[552,193,89,163,41.3,162.5,1],[1402,370,86,125,41.0,124.9,1],[0,370,118,142,64.2,142.4,1],[120,370,103,141,49.5,140.9,1],[839,193,95,157,50.5,156.6,1]]},"atl_bar":{"jp":[[422,370,94,135,51.4,135.3,1],[518,370,114,135,51.5,135.3,1],[634,370,104,135,57.7,134.9,1],[1235,193,83,146,38.8,145.6,1],[1568,370,86,117,44.6,116.6,1],[225,370,94,137,51.1,137.1,1],[321,370,99,137,53.1,136.8,1],[643,193,101,161,53.9,160.7,1]]},"atl_ball":{"jp":[[1392,193,104,143,57.6,143.1,1],[1498,193,118,143,58.4,142.8,1],[1618,193,111,143,61.8,143.1,1],[936,193,62,156,28.2,156.1,1],[1490,370,76,121,36.4,121.0,1],[838,370,102,132,42.3,131.5,1],[740,370,96,134,55.9,133.6,1],[746,193,91,157,47.4,156.8,1]]},"atl_f":{"jp":[[1233,370,81,127,41.4,126.5,1],[1121,370,110,128,42.3,128.2,1],[1316,370,84,126,39.8,126.2,1],[1320,193,70,144,34.2,143.9,1],[1656,370,67,116,29.7,116.4,1],[942,370,87,129,41.6,129.2,1],[1031,370,88,129,46.6,129.2,1],[1000,193,100,152,52.4,152.4,1]]}}};
+const JP_X=1580,JP_Y=214,JP_T=20,JP_HF=.75,JP_DANCE=2,JP_POSE=.4,JP_THROW=.3,JP_EN_DANCE=4,JP_BOSS=new Set(['bri','edu','buti']);
+const JP_DSEQ=[3,4,3,4,5,6,5,6]; // fotogramas del baile: brazos arriba, sentadilla, brazos a un lado y al otro
+const JPI=['assets/jp_stage.webp','assets/jp_dance.webp'].map(p=>lazyImg('l3',p));
+const jpOk=i=>JPI[i].complete&&JPI[i].naturalWidth;
+for(let i=B3_PROPS.length-1;i>=0;i--)if(Math.abs(B3_PROPS[i][1]-JP_X)<110)B3_PROPS.splice(i,1); // deja sitio para la carpa
+{const _s=setLevel3;setLevel3=function(){_s();G.jp={used:false,n:0,hfT:-9,sp:0};G.jpNotes=[]}}
+const jpOn=()=>!!(G&&G.lvl===3&&G.jp);
+const jpCol=h=>'hsl('+Math.round(((h%360)+360)%360)+',100%,62%)';
+function jpBlit(g,img,f,x,y,flip){const u=JPD.u;g.save();g.translate(Math.round(x),Math.round(y));if(flip)g.scale(-1,1);g.drawImage(img,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore()}
+/* --- chocar la mano: usa la misma acción que el puesto/cafetería (botón de barra junto a la cabina) --- */
+function nearJP(a){return jpOn()&&!G.jp.used&&(a.lead||a.human)&&!a.carry&&Math.abs(a.x-(JP_X-40))<62&&a.y<JP_Y+46}
+{const _n=nearStand;nearStand=function(a){if(G&&G.lvl===3)return nearJP(a);return _n(a)}}
+{const _s=startBuy;startBuy=function(a){if(!(G&&G.lvl===3))return _s(a);G.jp.used=true;
+  a.st='buy';a.t=0;a.done=false;a.jpR='hf';a.face=1;a.x=JP_X-46;a.y=Math.max(a.y,JP_Y+12);a.vx=a.vy=0;SFX.pick()}}
+function jpParty(){G.jp.n=JP_T;bigMsg('¡MODO FIESTA!',1.8);SFX.perfect();G.shake=Math.max(G.shake,.2);
+  for(const p of G.ath){ring(p.x,p.y-40,70);burst(p.x,p.y-50,22,jpCol(Math.random()*360),220);
+    if(athUp(p)&&p.st!=='buy'&&!p.carry){p.st='buy';p.t=0;p.jpR='dance';p.vx=p.vy=0}}} // la pareja también se pone a bailar
+function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,g:Math.random()<.5?'♪':'♫',h:Math.random()*360});SFX.throw()}
+{const _u=updBuy;updBuy=function(a,dt){if(!(G&&G.lvl===3&&a.jpR))return _u(a,dt);const t=a.t;a.vx=a.vy=0;
+  if(a.jpR!=='throw')a.inv=Math.max(a.inv||0,.1); // nadie te pega mientras chocas y bailas
+  if(a.jpR==='hf'){
+    if(t>=.2&&!a.done){a.done=true;G.jp.hfT=G.run;const hx=JP_X-24,hy=a.y-66;burst(hx,hy,18,'#ffd23f',220);ring(hx,hy,34);
+      G.shake=Math.max(G.shake,.15);G.hitstop=.06;SFX.hit();ftext(hx,hy-16,'¡CHOCA ESOS CINCO!','#ffd23f',11)}
+    if(t>=JP_HF&&!a.party){a.party=true;jpParty()}
+    if(t>=JP_HF+JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null;a.party=false}}
+  else if(a.jpR==='dance'){if(t>=JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null}}
+  else if(a.jpR==='throw'){if(t>=.07&&!a.done){a.done=true;jpNote(a)}if(t>=JP_THROW){a.st='idle';a.t=0;a.jpR=null}}}}
+// en modo fiesta, el botón de barra lanza notas (también la pareja)
+{const _a=startAtk;startAtk=function(a){if(jpOn()&&G.jp.n>0&&!a.carry){a.st='buy';a.t=0;a.done=false;a.jpR='throw';return}return _a(a)}}
+/* --- notas, tiempo de la fiesta y cabina como obstáculo --- */
+{const _u=updStreet;updStreet=function(dt){_u(dt);if(!jpOn()||G.phase!=='street')return;const J=G.jp;
+  for(const a of G.ath)if(Math.abs(a.x-JP_X)<52&&a.y<JP_Y+10)a.y=JP_Y+10; // no se puede pasar por detrás de la mesa
+  if(J.n>0){J.n=Math.max(0,J.n-dt);if(J.n===0)ftext(G.ath[0].x,G.ath[0].y-80,'SE ACABÓ LA FIESTA','#ff7ad9',10);
+    J.sp-=dt;if(J.sp<=0){J.sp=.08;for(const a of G.ath)if(athUp(a))burst(a.x+rr(-14,14),a.y-rr(20,80),1,jpCol(Math.random()*360),50)}}
+  const N=G.jpNotes;for(let i=N.length-1;i>=0;i--){const n=N[i];n.t+=dt;n.x+=n.vx*dt;let hit=false;
+    for(const e of G.en){if(e.dead||e.st==='dying'||e.st==='dance'||!canHit(e)||Math.abs(e.y-n.y)>18||Math.abs(e.x-n.x)>22)continue;hit=true;
+      if(JP_BOSS.has(e.type)||!JPD.fr[e.type]){ftext(e.x,e.y-100,'¡INMUNE!','#c8ccda',10);burst(n.x,n.y-n.z,6,'#ffffff',120)}
+      else{e.st='dance';e.t=0;e.vx=e.vy=0;e.danceT=JP_EN_DANCE;e.shout=0;G.score+=50;ftext(e.x,e.y-100,'¡A BAILAR!',jpCol(n.h),11);burst(n.x,n.y-n.z,12,jpCol(n.h),180);SFX.pick()}
+      break}
+    if(hit||n.t>1.6||n.x<G.cam-30||n.x>G.cam+W+30)N.splice(i,1)}}}
+// competidores bailando: quietos, sin atacar; un golpe los saca del baile
+{const _u=updJudge;updJudge=function(e,dt){if(e.st!=='dance')return _u(e,dt);
+  e.t+=dt;e.bobT=(e.bobT||0)+dt;e.flash=Math.max(0,(e.flash||0)-dt);e.inv=Math.max(0,(e.inv||0)-dt);e.shout=0;e.vx=e.vy=0;
+  if(e.t>=e.danceT){e.st='walk';e.t=0;e.cd=Math.max(e.cd||0,.6)}}}
+/* --- dibujo --- */
+function jpFrame(o){const t=o.t||0;if(o.jpR==='throw')return 1;let d=t;
+  if(o.jpR==='hf'){if(t<.18)return 0;if(t<.5)return 1;if(t<JP_HF)return 2;d=t-JP_HF}
+  return d<JP_DANCE?JP_DSEQ[Math.min(7,Math.floor(d/JP_DANCE*8))]:7}
+{const _d=drawAnimEnt;drawAnimEnt=function(g,o){if(o.kind==='ath'&&o.st==='buy'&&o.jpR&&G&&G.lvl===3&&jpOk(1)){const F=JPD.fr[(o.pal&&o.pal.spr)||'atl_bar'];if(F){
+    const i=jpFrame(o),f=F.jp[i],u=JPD.u,z=(o.z||0)+(i===3?6:0);
+    g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.ellipse(Math.round(o.x),Math.round(o.y),17,5,0,0,7);g.fill();
+    g.imageSmoothingQuality=ISQ;jpBlit(g,JPI[1],f,o.x,o.y-z,(o.face||1)<0);o._top=Math.round(o.y-z-f[5]*u);return true}}
+  return _d(g,o)}}
+{const _d=drawElite;drawElite=function(g,e){if(e.st!=='dance'||!JPD.fr[e.type]||!jpOk(1))return _d(g,e);
+  const F=JPD.fr[e.type].dance,f=F[Math.floor(e.t*7)%F.length],u=JPD.u;
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(e.x),Math.round(e.y),24,5,0,0,7);g.fill();
+  jpBlit(g,JPI[1],f,e.x,e.y,(e.face||1)<0);
+  if(e.hp<e.maxHp){const w=30;bar(g,Math.round(e.x-w/2),Math.round(e.y-96),w,4,e.hp/e.maxHp,'#ff9a1a','#10303a')}}}
+function jpDJFrame(){const J=G.jp,L=G.ath[0];if(L&&L.st==='buy'&&L.jpR==='hf'&&L.t<.6)return L.t>.06?1:0;if(G.run-J.hfT<.4)return 1;
+  if(!J.used&&L&&Math.abs(L.x-JP_X)<190)return Math.floor(G.run*2.5)%2?0:2; // saluda cuando te acercas
+  return 2}
+{const _d=drawBeachBG;drawBeachBG=function(g,cam){_d(g,cam);if(!jpOn()||!jpOk(0))return;const x=JP_X-cam;if(x<-130||x>W+130)return;
+  const S=JPD.fr,u=JPD.u,te=S.tent.t[0],tb=S.table.t[0],th=tb[3]*u;g.imageSmoothingEnabled=true;g.imageSmoothingQuality=ISQ;
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(x),JP_Y,tb[2]*u*.62,4,0,0,7);g.fill();
+  jpBlit(g,JPI[0],te,x,JP_Y-10);jpBlit(g,JPI[0],tb,x,JP_Y);jpBlit(g,JPI[0],S.joanpi.dj[jpDJFrame()],x,JP_Y-th*.8);
+  const L=G.ath[0];if(L&&nearJP(L)){g.globalAlpha=.6+.4*Math.sin(G.run*6);drawBtnPrompt(g,x-30,JP_Y-104,'CHOCA LA MANO');g.globalAlpha=1}}}
+// brillo multicolor y tiempo que queda de fiesta
+function drawJPAura(g){if(!jpOn()||!(G.jp.n>0))return;for(const a of G.ath){if(!athUp(a))continue;const x=Math.round(a.x),y=Math.round(a.y-(a.z||0)),h=G.run*240+a.x;
+  g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.22+.1*Math.sin(G.run*14);g.fillStyle=jpCol(h);g.beginPath();g.ellipse(x,y-40,26,46,0,0,7);g.fill();
+  g.globalAlpha=.16;g.fillStyle=jpCol(h+140);g.beginPath();g.ellipse(x,y-40,17,36,0,0,7);g.fill();g.restore();
+  const w=34,by=y-108;g.fillStyle='rgba(0,0,0,.6)';g.fillRect(x-w/2-1,by-1,w+2,6);g.fillStyle=jpCol(h);g.fillRect(x-w/2,by,w*G.jp.n/JP_T,4)}}
+{const _b=drawBossFloor;drawBossFloor=function(g){_b(g);drawJPAura(g)}}
+{const _d=drawKB;drawKB=function(g){_d(g);if(!jpOn()||!G.jpNotes.length)return;g.save();g.font="bold 20px 'Bangers',Impact,sans-serif";g.textAlign='center';g.textBaseline='middle';g.lineWidth=3;g.strokeStyle='#14060f';
+  for(const n of G.jpNotes){const x=Math.round(n.x),y=Math.round(n.y-n.z+Math.sin(n.t*18)*5);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,n.y,6,2,0,0,7);g.fill();
+    g.strokeText(n.g,x,y);g.fillStyle=jpCol(n.h+n.t*400);g.fillText(n.g,x,y)}g.restore()}}
+
 /* ===== RENDIMIENTO: carga por niveles, precalentado de texturas y memoria ===== */
 // qué grupo de imágenes necesita el nivel en curso
 const lvlGroup=()=>G&&G.lvl===2?'l2':G&&G.lvl===3?'l3':null;
