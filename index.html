@@ -3797,7 +3797,7 @@ for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_
   const el=$('#menu '+s);if(el&&TXT_IMG[k]){if(el.tagName==='BUTTON'){el.innerHTML=MW_(k,alt);el.setAttribute('aria-label',alt)}else el.outerHTML=MW_(k,alt)}}
 // ranking por modo: historia completa o cada nivel suelto
 const RK_MODEN={story:'Modo historia',n1:'Nivel 1 · De camino al Lynx',n2:'Nivel 2 · Lynx Social Training Club',n3:'Nivel 3 · Fitness Challenge League',final:'Final · El WOD'};
-function playMode(){if(/nivel3/.test(location.hash))return 'n3';if(/nivel2/.test(location.hash))return 'n2';if(PLAY.mode!=='lvl')return 'story';return PLAY.start==='F'?'final':'n'+PLAY.start}
+function playMode(){if(/#wod/.test(location.hash))return 'final';if(/nivel3/.test(location.hash))return 'n3';if(/nivel2/.test(location.hash))return 'n2';if(PLAY.mode!=='lvl')return 'story';return PLAY.start==='F'?'final':'n'+PLAY.start}
 {const _s=submitScore;submitScore=function(rec){rec.mode=playMode();if(G&&G.final)G.final.mode=rec.mode;const m=$('#rkResMode');if(m)m.textContent='Ranking: '+(RK_MODEN[rec.mode]||'');return _s(rec)}}
 $$('#rkTabs button').forEach(b=>b.addEventListener('click',()=>{rkTab=b.dataset.t;refreshRank()}));
 {const _mg=menuGo;menuGo=function(p){if(p==='rank'){const m=G&&G.final&&G.final.mode;rkTab=RK_TABS.some(t=>t[0]===m)?m:'story'}_mg(p)}}
@@ -4610,6 +4610,8 @@ function wodPos(k,c){const U=wodUnits(c);let b=0;for(let i=0;i<4;i++){if(k<U[i]|
 function ghostK(gh,t){const sp=gh.sp;if(t>=gh.wt)return sp.length;let i=0;while(i<sp.length&&sp[i]<=t)i++;if(i>=sp.length)return sp.length;
   const t0=i?sp[i-1]:0,t1=sp[i];return i+clamp((t-t0)/Math.max(.05,t1-t0),0,.999)}
 function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
+// pruebas: #wod entra directo al WOD final al empezar partida
+{const _sg=startGame;startGame=function(o){_sg(o);if(G&&/#wod/.test(location.hash)&&!(NET.role==='guest')&&G.phase!=='wod'){G.tut=null;startWod()}}}
 {const _s=startWod;startWod=function(){_s();GH_D.gx=GH_D.mx=null;try{G.ghost=wodGhostFor(G.cat)}catch(e){G.ghost=null}}}
 {const _u=updWod;updWod=function(dt){
   const w=G.wod;if(!w)return _u(dt);const c=G.cat,ph0=w.ph;
