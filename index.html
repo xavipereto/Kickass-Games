@@ -513,7 +513,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
         <nav class="hub lvlpick">
           <button class="hbtn" type="button" data-lvl="1"><span class="gtxt">DE CAMINO AL LYNX</span><small>Nivel 1</small></button>
           <button class="hbtn" type="button" data-lvl="2"><span class="gtxt">LYNX SOCIAL TRAINING CLUB</span><small>Nivel 2</small></button>
-          <button class="hbtn" type="button" data-lvl="F"><span class="gtxt">FINAL</span><small>El WOD de la KickAss Games</small></button>
+          <button class="hbtn" type="button" data-lvl="F"><span class="gtxt">LEVEL WOD</span><small>El WOD de la KickAss Games</small></button>
         </nav>
         <div class="mnav"><button type="button" class="nbtn" data-go="mode">&#9664; VOLVER</button></div>
       </section>
@@ -600,7 +600,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
       <!-- RANKING -->
       <section class="mp" data-p="rank" hidden>
         <div class="ptitle"><span class="gtxt" id="rkT">LA PIZARRA</span><span id="rkChip" class="chip">Cargando</span></div>
-        <div id="rkTabs" class="rktabs"><button type="button" data-t="story">HISTORIA</button><button type="button" data-t="n1">NIVEL 1</button><button type="button" data-t="n2">NIVEL 2</button><button type="button" data-t="final">FINAL</button></div>
+        <div id="rkTabs" class="rktabs"><button type="button" data-t="story">HISTORIA</button><button type="button" data-t="n1">NIVEL 1</button><button type="button" data-t="n2">NIVEL 2</button><button type="button" data-t="final">LEVEL WOD</button></div>
         <div class="pbody card scrollin"><ol id="rkMenu" class="rank"></ol></div>
         <div class="mnav"><button type="button" class="nbtn" data-go="hub">&#9664; VOLVER</button></div>
       </section>
@@ -1029,7 +1029,7 @@ const LKEY='nrb_scores_v1';
 function localRows(){try{return JSON.parse(localStorage.getItem(LKEY)||'[]')}catch(e){return[]}}
 function saveLocal(rec){try{const a=localRows();a.push(rec);a.sort(cmpRec);localStorage.setItem(LKEY,JSON.stringify(a.slice(0,40)))}catch(e){}}
 function cmpRec(a,b){return (b.score-a.score)||(a.time-b.time)}
-const RK_TABS=[['story','HISTORIA'],['n1','NIVEL 1'],['n2','NIVEL 2'],['final','FINAL']];let rkTab='story';
+const RK_TABS=[['story','HISTORIA'],['n1','NIVEL 1'],['n2','NIVEL 2'],['final','LEVEL WOD']];let rkTab='story';
 function shownRows(tab){tab=tab||rkTab;return(RK.mode==='shared'?RK.rows:localRows()).filter(r=>(r.mode||'story')===tab).sort(cmpRec).slice(0,10)}
 const PAIRN={M:'Masculina',F:'Femenina',X:'Mixta'};
 function renderRank(ol,meKey,tab){
@@ -3793,10 +3793,10 @@ setInterval(()=>{if(quizEl&&quizEl.style.display!=='none'&&(mode!=='play'||!G||!
   else if(PLAY.start==='F'){startWod()}}}
 // rótulos con letras de ChatGPT cuando existan (si no, texto)
 const MW_=(k,alt)=>'<img class="wimg" alt="'+alt+'" src="'+TXT_IMG[k]+'">';
-for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_elegir','Elegir nivel'],['[data-lvl="1"] .gtxt','g_nivel1','De camino al Lynx'],['[data-lvl="2"] .gtxt','g_nivel2','Lynx Social Training Club'],['[data-lvl="F"] .gtxt','g_final','Final']]){
+for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_elegir','Elegir nivel'],['[data-lvl="1"] .gtxt','g_nivel1','De camino al Lynx'],['[data-lvl="2"] .gtxt','g_nivel2','Lynx Social Training Club'],['[data-lvl="F"] .gtxt','g_final','Level WOD']]){
   const el=$('#menu '+s);if(el&&TXT_IMG[k]){if(el.tagName==='BUTTON'){el.innerHTML=MW_(k,alt);el.setAttribute('aria-label',alt)}else el.outerHTML=MW_(k,alt)}}
 // ranking por modo: historia completa o cada nivel suelto
-const RK_MODEN={story:'Modo historia',n1:'Nivel 1 · De camino al Lynx',n2:'Nivel 2 · Lynx Social Training Club',n3:'Nivel 3 · Fitness Challenge League',final:'Final · El WOD'};
+const RK_MODEN={story:'Modo historia',n1:'Nivel 1 · De camino al Lynx',n2:'Nivel 2 · Lynx Social Training Club',n3:'Nivel 3 · Fitness Challenge League',final:'Level WOD'};
 function playMode(){if(/#wod/.test(location.hash))return 'final';if(/nivel3/.test(location.hash))return 'n3';if(/nivel2/.test(location.hash))return 'n2';if(PLAY.mode!=='lvl')return 'story';return PLAY.start==='F'?'final':'n'+PLAY.start}
 {const _s=submitScore;submitScore=function(rec){rec.mode=playMode();if(G&&G.final)G.final.mode=rec.mode;const m=$('#rkResMode');if(m)m.textContent='Ranking: '+(RK_MODEN[rec.mode]||'');return _s(rec)}}
 $$('#rkTabs button').forEach(b=>b.addEventListener('click',()=>{rkTab=b.dataset.t;refreshRank()}));
