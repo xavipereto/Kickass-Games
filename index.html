@@ -4168,6 +4168,54 @@ function drawJPAura(g){if(!jpOn()||!(G.jp.n>0))return;for(const a of G.ath){if(!
   for(const n of G.jpNotes){const x=Math.round(n.x),y=Math.round(n.y-n.z+Math.sin(n.t*18)*5);g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,n.y,6,2,0,0,7);g.fill();
     g.strokeText(n.g,x,y);g.fillStyle=jpCol(n.h+n.t*400);g.fillText(n.g,x,y)}g.restore()}}
 
+/* ===== NIVEL 3: SONIDOS (quejidos, gritos de KO, esfuerzos y golpes) con las muestras grabadas de los niveles 1 y 2 =====
+   k1 · FAGU · headjudge · Briatore · Edu → voz de hombre (aum / ko); la del dorsal 27 → voz de mujer (auf).
+   Cada uno con su tono para que no suenen todos igual (Briatore y Edu más graves). */
+const L3V={k1:'m',k2:'m',hj:'m',bri:'m',edu:'m',k3:'f'},L3V_R={k1:1,k2:1.05,hj:.96,bri:.82,edu:.9,k3:1.02};
+const l3On=()=>!!(G&&G.lvl===3);
+function l3Voice(e,kill){if(!l3On()||!e||!L3V[e.type])return;const f=L3V[e.type]==='f',r=L3V_R[e.type]||1;
+  if(kill){if(e.vk3)return;e.vk3=1;smpPlay(f?'auf':'ko',1,(f?.92:1)*r*rr(.97,1.03))||SFX.hit();return}
+  if(G.run-(e.ouchT||-9)<.55)return;e.ouchT=G.run;smpPlay(f?'auf':'aum',.85,r*rr(.9,1))}
+// esfuerzo al atacar (como la voz de los atletas con la barra o el peso muerto de la élite)
+function l3Grunt(e,vol){if(!l3On())return;const f=L3V[e.type]==='f';smpPlay(f?'db_atl_ball':'bar_atl_bar',vol||.75,(L3V_R[e.type]||1)*(f?1:.84)*rr(.96,1.04))}
+// quejido al recibir y grito al caer
+{const _h=hurtE;hurtE=function(e,dmg,dir,kd,kb){const hp=e.hp,r=_h(e,dmg,dir,kd,kb);if(e.hp<hp&&e.hp>0&&e.st!=='dying')l3Voice(e,false);return r}}
+{const _k=killE;killE=function(e,dir){const air=e.st==='grabbed'||e.st==='kicked';l3Voice(e,true);const r=_k(e,dir);
+  if(l3On()&&!air&&/^(k1|k2|k3|hj)$/.test(e.type))smpPlay('salto',.8,rr(.85,.95),.78); // el cuerpo contra la arena
+  return r}}
+// la patada en el culo también duele aunque no tumbe
+{const _u=updKick;updKick=function(a,dt){const e=a.tgt,pre=!a.hit;const r=_u(a,dt);if(pre&&a.hit&&e&&e.hp>0)l3Voice(e,false);return r}}
+// Briatore y Edu: grito al caer y golpe al dar con el suelo (también si caen con una patada o un lanzamiento)
+{const _b=briKOStart;briKOStart=function(e,t0){const was=G.briDown;_b(e,t0);if(was||!l3On())return;l3Voice(e,true);const t=t0||0;
+  if(t<.5)smpPlay('salto_c',.7,.8,.5-t);smpPlay('salto',1,.75,Math.max(0,1.05-t))}}
+{const _b=eduKO;eduKO=function(e){_b(e);if(!l3On())return;if(e&&e.type)l3Voice(e,true);else smpPlay('ko',1,.9);smpPlay('salto',1,.8,.9)}}
+// E1 (dorsal 127): esfuerzo en el empujón final
+{const _u=updK1;updK1=function(e,tg,dt){const n=e.st==='pc'&&e.pcHit?e.pcHit.length:-1;_u(e,tg,dt);if(n>=0&&n<3&&e.pcHit&&e.pcHit.length===3)l3Grunt(e,.8)}}
+// FAGU: esfuerzo al lanzar el cono
+{const _u=updK2;updK2=function(e,tg,dt){const was=e.st==='cn'&&!e.done;_u(e,tg,dt);if(was&&e.done)smpPlay('db_atl_bar',.6,rr(.95,1.05))}}
+// dorsal 27: pecho contra la arena en el burpee, grito al saltar y caída
+{const _u=updK3;updK3=function(e,tg,dt){_u(e,tg,dt);if(e.st!=='bj'){e.bjT0=-1;return}const t=e.t,t0=e.bjT0==null||e.bjT0<0||e.bjT0>t?-1e-3:e.bjT0;e.bjT0=t;
+  if(t0<.42&&t>=.42)smpPlay('salto_c',.5,.85);
+  if(t0<K3_JUMP[0]&&t>=K3_JUMP[0])l3Grunt(e,.85);
+  if(t0<K3_JUMP[1]&&t>=K3_JUMP[1])smpPlay('salto',.75,1.05)}}
+// HEADJUDGE: esfuerzo al estampar la tablilla y «¡plaf!» si da
+{const _u=updHJ;updHJ=function(e,tg,dt){const was=e.st==='tb'&&!e.done,hp=G.ath.map(a=>a.hp);_u(e,tg,dt);
+  if(was&&e.done){l3Grunt(e,.7);if(G.ath.some((a,i)=>a.hp<hp[i]))smpPlay('salto_c',1,1.35)}}}
+// Briatore: esfuerzo en el relojazo · Edu: esfuerzo en el calculadorazo de arriba abajo
+{const _u=updBri;updBri=function(e,dt){const n=e.st==='pc'&&e.pcHit?e.pcHit.length:-1;_u(e,dt);if(n>=0&&n<3&&e.pcHit&&e.pcHit.length===3)l3Grunt(e,.85)}}
+{const _u=updEdu;updEdu=function(e,dt){const n=e.st==='pc'&&e.pcHit?e.pcHit.length:-1;_u(e,dt);if(n>=0&&n<3&&e.pcHit&&e.pcHit.length===3)l3Grunt(e,.8)}}
+// Edu, descolocado cuando aciertas el cálculo
+{const _q=quizAnswer;quizAnswer=function(i){const Q=G&&G.quiz,e=Q&&!Q.done&&Q.e;_q(i);if(e&&e.qok&&l3On())smpPlay('aum',.8,.86)}}
+// Edu salta por delante de su mesa
+{const _u=updStreet;updStreet=function(dt){const d=l3On()&&G.edu,ph=d&&d.ph;_u(dt);if(d&&ph==='rise'&&d.ph==='fight')smpPlay('salto',.9,.85,.12)}}
+// la mesa de Moure: golpes de madera y estruendo al romperse
+{const _m=mesaHit;mesaHit=function(n,dir){const m=G&&G.mesa,st=m&&m.st,ph=m&&m.ph;_m(n,dir);if(!m||ph!=='fight')return;
+  if(m.st===2&&st!==2){smpPlay('wbcae',1,.7);smpPlay('salto',1,.8,.06)}else smpPlay('salto_c',.55,rr(.75,.9))}}
+// BUTI: quejido del atleta al que se le engancha al tobillo y aterrizaje del perro al salir volando
+{const _u=updStreet;updStreet=function(dt){const d=l3On()&&G.buti,st=d&&d.st;_u(dt);if(!d||d.st===st)return;
+  if(d.st==='bite'&&d.tg)smpPlay(isFemAth(d.tg)?'auf':'aum',.9,1.08);
+  if(st==='fly'&&d.st==='dizzy')smpPlay('salto_c',.6,1.4)}}
+
 /* ===== RENDIMIENTO: carga por niveles, precalentado de texturas y memoria ===== */
 // qué grupo de imágenes necesita el nivel en curso
 const lvlGroup=()=>G&&G.lvl===2?'l2':G&&G.lvl===3?'l3':null;
