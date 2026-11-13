@@ -1058,7 +1058,7 @@ async function initRanking(){
 }
 async function submitScore(rec){
   const msg=$('#rSave');let where='local';
-  rec={team:rec.team,pair:rec.pair,cat:rec.cat,score:rec.score,time:rec.time,noRep:rec.noRep,done:rec.done,photog:rec.photog,at:rec.at};
+  rec={team:rec.team,pair:rec.pair,cat:rec.cat,score:rec.score,time:rec.time,noRep:rec.noRep,done:rec.done,photog:rec.photog,at:rec.at,wod:rec.wod||''};
   if(RK.mode==='shared'&&RK.db&&RK.uid){
     try{
       const ref=RK.db.doc('scores/'+RK.uid);const cur=await ref.get();
@@ -3089,14 +3089,16 @@ async function fbLoad(){
   const r=await fetch(fbURL(':runQuery'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('fb '+r.status);
   const a=await r.json(),rows=[];
   for(const x of a){const d=x.document;if(!d)continue;const f=d.fields||{},g=k=>fbVal(f[k]);
-    rows.push({key:d.name.split('/').pop(),team:String(g('team')||''),pair:g('pair'),cat:g('cat'),score:+g('score')||0,time:+g('time')||0,noRep:+g('noRep')||0,done:!!g('done'),mode:g('mode')||'story',at:+g('at')||0})}
+    rows.push({key:d.name.split('/').pop(),team:String(g('team')||''),pair:g('pair'),cat:g('cat'),score:+g('score')||0,time:+g('time')||0,noRep:+g('noRep')||0,done:!!g('done'),mode:g('mode')||'story',at:+g('at')||0,wod:g('wod')||''})}
   // una línea por equipo + pareja + categoría: su mejor marca
   const best=new Map();for(const r of rows){const k=(r.team.trim().toLowerCase())+'|'+r.pair+'|'+r.cat+'|'+r.mode;const o=best.get(k);if(!o||cmpRec(r,o)<0)best.set(k,r)}
   return [...best.values()]}
 async function fbSave(rec){
   const F={team:{stringValue:String(rec.team).slice(0,24)},pair:{stringValue:String(rec.pair)},cat:{stringValue:String(rec.cat)},score:{integerValue:String(Math.max(0,Math.round(rec.score)))},
     time:{doubleValue:Math.round((rec.time||0)*10)/10},noRep:{integerValue:String(rec.noRep|0)},done:{booleanValue:!!rec.done},mode:{stringValue:String(rec.mode||'story')},at:{integerValue:String(Date.now())}};
+  if(rec.wod)F.wod={stringValue:String(rec.wod).slice(0,2000)};
   let r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});
+  if(!r.ok&&F.wod&&(r.status===400||r.status===403)){delete F.wod;r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F})});if(r.ok)console.warn('ranking: las reglas de Firebase no aceptan el campo wod (fantasma del WOD)')}
   if(!r.ok&&(r.status===400||r.status===403)){const F2=Object.assign({},F);delete F2.mode;r=await fetch(fbURL('/scores'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:F2})});if(r.ok)console.warn('ranking: las reglas de Firebase no aceptan el campo mode')}
   if(!r.ok)throw new Error('fb '+r.status);
   const d=await r.json();return d.name.split('/').pop()}
@@ -4534,6 +4536,93 @@ function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
   window.__nrb={mkJudge,spawnWave,get TALKS(){return TALKS},menuGo:p=>menuGo(p),playMode:()=>playMode(),startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
+/* ===== WOD: FANTASMA DEL RÉCORD =====
+   Cada WOD completado guarda en 'scores' el campo wod = "1|<tiempo del WOD en décimas>|<décima en que se cerró cada repetición>"
+   (cada snatch, cada muscle-up y cada metro de handstand). Al empezar el WOD se busca el más rápido de la misma categoría
+   (ranking general + mejor marca guardada en este móvil) y se dibuja como un fantasma translúcido en una pista de progreso;
+   la pizarra enseña el récord y al cerrar cada movimiento sale el split contra el récord. */
+const GH_LKEY='nrb_wodbest_v1',GH_X0=26,GH_X1=424,GH_Y=84;
+const GH_D={gx:null,mx:null,gt:0,mt:0};
+function wodUnits(c){return[c.snN,c.muN,c.hsN]}
+function wodN(c){return c.snN+c.muN+c.hsN}
+function wodEnc(w){return '1|'+Math.round(w.t*10)+'|'+(w.ghRec||[]).join(',')}
+function wodDec(s,c){
+  if(typeof s!=='string'||s.length>2000)return null;const p=s.split('|');if(p[0]!=='1'||p.length<3)return null;
+  const wt=+p[1]/10,sp=p[2]?p[2].split(',').map(x=>+x/10):[];
+  if(!(wt>0)||wt>c.cap+1||sp.length!==wodN(c))return null;
+  for(let i=0;i<sp.length;i++)if(!(sp[i]>=0)||(i&&sp[i]<sp[i-1])||sp[i]>wt+.15)return null;
+  return{wt,sp}}
+function wodGhostFor(c){
+  let best=null;
+  const consider=(team,wod,at)=>{const d=wodDec(wod,c);if(!d)return;at=+at||0;if(!best||d.wt<best.wt||(d.wt===best.wt&&at<best.at))best={team:String(team||'?').slice(0,24),wt:d.wt,sp:d.sp,at}};
+  for(const r of (RK.mode==='shared'?RK.rows:localRows()))if(r&&r.cat===c.name&&r.done&&r.wod)consider(r.team,r.wod,r.at);
+  try{const L=JSON.parse(localStorage.getItem(GH_LKEY)||'{}')[c.name];if(L)consider(L.team,L.wod,L.at)}catch(e){}
+  return best}
+function wodSaveLocalBest(c,team,wod,wt){try{const o=JSON.parse(localStorage.getItem(GH_LKEY)||'{}'),cur=o[c.name]&&wodDec(o[c.name].wod,c);
+  if(!cur||wt<cur.wt){o[c.name]={team,wod,at:Date.now()};localStorage.setItem(GH_LKEY,JSON.stringify(o))}}catch(e){}}
+// repeticiones cerradas (para los splits): el handstand cuenta por metros
+function wodDone(w,c){if(w.ph>=3)return wodN(c);return Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(Math.floor(w.hs.d+1e-6),c.hsN):0)}
+// unidades hechas (con decimales) → posición 0..3 en la pista (un tramo igual por movimiento)
+function wodPos(k,c){const U=wodUnits(c);if(k<U[0])return k/U[0];k-=U[0];if(k<U[1])return 1+k/U[1];k-=U[1];return Math.min(3,2+k/U[2])}
+function ghostK(gh,t){const sp=gh.sp;if(t>=gh.wt)return sp.length;let i=0;while(i<sp.length&&sp[i]<=t)i++;if(i>=sp.length)return sp.length;
+  const t0=i?sp[i-1]:0,t1=sp[i];return i+clamp((t-t0)/Math.max(.05,t1-t0),0,.999)}
+function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
+{const _s=startWod;startWod=function(){_s();GH_D.gx=GH_D.mx=null;try{G.ghost=wodGhostFor(G.cat)}catch(e){G.ghost=null}}}
+{const _u=updWod;updWod=function(dt){
+  const w=G.wod;if(!w)return _u(dt);const c=G.cat,ph0=w.ph;
+  _u(dt);
+  if(G.wod!==w)return;
+  w.ghRec=w.ghRec||[];const n=wodDone(w,c);while(w.ghRec.length<n)w.ghRec.push(Math.round(w.t*10));
+  if(w.ghMsg)w.ghMsg.t-=dt;
+  const gh=G.ghost,GT=gh?gh.team.toUpperCase():'';
+  if(gh&&w.ghRec.length&&w.ph<3){const U=w.ghRec.length,ahead=w.ghRec[U-1]/10<=gh.sp[U-1];
+    if(w.ghAhead!=null&&ahead!==w.ghAhead&&!(w.ghMsg&&w.ghMsg.t>0)&&w.t-(w.ghSw||-9)>4){w.ghSw=w.t;w.ghMsg={txt:ahead?'¡ADELANTÁIS A '+GT+'!':GT+' OS ADELANTA',col:ahead?'#3ddc84':'#ff7a7a',t:1.8}}
+    w.ghAhead=ahead}
+  if(w.ph!==ph0&&ph0<3){ // fin de un movimiento: split
+    const U=wodUnits(c),cum=[U[0],U[0]+U[1],U[0]+U[1]+U[2]][ph0];
+    let txt=['SNATCH','MUSCLE-UPS','HANDSTAND'][ph0]+' '+fmtT(w.t),col='#fff';
+    if(gh){const d=w.t-gh.sp[cum-1];txt+='  ·  '+fmtD(d)+' vs '+GT;col=d<=0?'#3ddc84':'#ff7a7a'}
+    w.ghMsg={txt,col,t:3};
+    if(w.ph===3&&(!gh||w.t<gh.wt)){w.ghNew=true;bigMsg('¡NUEVO RÉCORD!',2.6);setTimeout(()=>{try{SFX.perfect()}catch(e){}},400)}
+  }}}
+{const _f=finishRun;finishRun=function(kind){const w=G&&G.wod,c=G&&G.cat,was=G&&G.over;_f(kind);
+  if(was||!G.final||!w||kind!=='done'||!w.ghRec||w.ghRec.length!==wodN(c))return;
+  G.final.wod=wodEnc(w);wodSaveLocalBest(c,G.final.team,G.final.wod,w.t);
+  if(w.ghNew)G.final.sub='¡NUEVO RÉCORD '+c.name.toUpperCase()+'! '+G.final.sub}}
+// pizarra: récord de la categoría (y el tachón cuando lo batís)
+{const _s=drawWodScene;drawWodScene=function(g,w,c){const ok=_s(g,w,c);if(!ok)return ok;
+  const gh=G.ghost,bx=455,by=22,y=by+113,f=F_U(11),mw=150;
+  const line=(pre,team,tm)=>{g.font=f;const tw=g.measureText(' '+tm).width;return fitText(g,pre+team.toUpperCase(),f,mw-tw)+' '+tm};
+  if(w.ghNew&&w.ph>=3){
+    if((w.endT||0)<.8&&gh){const s=line('RÉCORD ',gh.team,fmtT(gh.wt));T(g,s,bx+10,y,f,'#8a8a99');const tw=g.measureText(s).width*clamp((w.endT||0)/.5,0,1);g.fillStyle='#c0142e';g.fillRect(bx+9,y-4,tw+2,2)}
+    else T(g,line('★ ',G.o.team,fmtT(w.t)),bx+10,y,f,'#1a8f4a');
+  }else if(gh)T(g,line('RÉCORD ',gh.team,fmtT(gh.wt)),bx+10,y,f,'#0b2a6b');
+  else T(g,'RÉCORD: ¡SED LOS PRIMEROS!',bx+10,y,f,'#0b2a6b');
+  return ok}}
+// pista del fantasma (arriba a la izquierda, bajo el marcador)
+function ghMini(x,st,ph,bob){const b=G.ath[0];return Object.assign({},b,{x,y:GH_Y,z:0,s:.36,face:1,st,t:0,ph,bobT:bob,flash:0,lead:false,inv180:false,pose:null,wpn:'none',hu:0,lu:0,vx:0,vy:0})}
+function drawGhostTrack(g){
+  const w=G.wod,c=G.cat,gh=G.ghost;if(!w||!c||!gh||!G.ath||!G.ath[0])return;
+  const t=w.run?w.t:0,segW=(GH_X1-GH_X0)/3,now=performance.now()/1000;
+  g.save();
+  g.fillStyle='rgba(4,14,26,.66)';g.fillRect(GH_X0-16,42,GH_X1-GH_X0+32,62);g.fillStyle='#4fe3df';g.fillRect(GH_X0-16,42,GH_X1-GH_X0+32,1);
+  ['SNATCH','MUSCLE-UP','HANDSTAND'].forEach((s,i)=>{const x=GH_X0+i*segW,cur=w.ph===i;g.fillStyle=w.ph>i?'#3ddc84':cur?'#4fe3df':'#2f5368';g.fillRect(x+2,GH_Y+1,segW-4,3);T(g,s,x+segW/2,52,F_U(9),cur?'#4fe3df':'#8fb6c4','center')});
+  for(let i=0;i<4;i++){g.fillStyle=i%2?'#111':'#fff';g.fillRect(GH_X1+2,GH_Y-12+i*4,3,4);g.fillStyle=i%2?'#fff':'#111';g.fillRect(GH_X1+5,GH_Y-12+i*4,3,4)}
+  const gx=GH_X0+wodPos(ghostK(gh,t),c)*segW,
+        mk=w.ph>=3?3:wodPos(Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(w.hs.d,c.hsN):0),c),mx=GH_X0+mk*segW;
+  if(GH_D.gx==null){GH_D.gx=gx;GH_D.mx=mx}
+  const ogx=GH_D.gx,omx=GH_D.mx;GH_D.gx+=(gx-GH_D.gx)*.2;GH_D.mx+=(mx-GH_D.mx)*.2;
+  const gMov=Math.abs(GH_D.gx-ogx)>.08,mMov=Math.abs(GH_D.mx-omx)>.08,gDone=t>=gh.wt;
+  g.save();g.globalAlpha=.5;try{g.filter='grayscale(1) sepia(1) hue-rotate(155deg) saturate(2.5) brightness(1.25)'}catch(e){}
+  drawPerson(g,ghMini(Math.round(GH_D.gx),gMov?'walk':gDone?'cheer':'idle',now*9,now));g.restore();
+  const me=ghMini(Math.round(GH_D.mx),mMov?'walk':w.ph>=3?'cheer':'idle',now*9+1,now+.5);drawPerson(g,me);
+  {const x=Math.round(GH_D.mx),y=(me._top!=null?me._top:GH_Y-34)-4;g.fillStyle='#ffd23f';g.fillRect(x-4,y-5,8,2);g.fillRect(x-2,y-3,4,2)}
+  // línea de abajo: mensaje del split o quién es el fantasma y la diferencia
+  if(w.ghMsg&&w.ghMsg.t>0){const a=clamp(w.ghMsg.t*3,0,1);g.globalAlpha=a;T(g,fitText(g,w.ghMsg.txt,F_U(13),GH_X1-GH_X0+20),(GH_X0+GH_X1)/2,99,F_U(13),w.ghMsg.col,'center','#04101a');g.globalAlpha=1}
+  else{T(g,fitText(g,'FANTASMA: '+gh.team.toUpperCase()+' · '+fmtT(gh.wt),F_U(11),250),GH_X0-6,99,F_U(11),'#9fdcff');
+    const U=(w.ghRec||[]).length;if(U&&w.ph<3){const d=w.ghRec[U-1]/10-gh.sp[U-1];T(g,fmtD(d),GH_X1+10,99,F_U(12),d<=0?'#3ddc84':'#ff7a7a','right')}}
+  g.restore()}
+{const _d=drawWod;drawWod=function(g){_d(g);try{drawGhostTrack(g)}catch(e){}}}
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1800))]).then(init);
 })();
