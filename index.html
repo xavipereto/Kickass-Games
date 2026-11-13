@@ -1769,7 +1769,7 @@ function updProj(dt){
   });
 }
 function spawnWave(w){
-  const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<(list.includes('e1')||list.includes('bri')?0:G.cat.extra);i++)list.push(boss?(i%2?'acf':'acm'):G.lvl===2?['e2','e3','e4','e5'][Math.floor(Math.random()*4)]:G.lvl===3?['k1','k2','k3'][Math.floor(Math.random()*3)]:'base');
+  const list=w.e.slice(),boss=list.includes('acm');for(let i=0;i<(list.includes('e1')||list.includes('bri')?0:G.cat.extra);i++)list.push(boss?(i%2?'acf':'acm'):G.lvl===2?['e2','e3','e4','e5'][Math.floor(Math.random()*4)]:G.lvl===3?['k1','k2','k3','hj'][Math.floor(Math.random()*4)]:'base');
   list.forEach((t,i)=>{const left=i%2===0;const x=left?G.cam-30-i*18:G.cam+W+30+i*18;const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);
     if(t==='rower'){startTalk('rower');e.x=G.cam+W+100;e.y=rowerLane();e.face=-1;e.shCd=1.5;e.offT=1.5;e.sprint=false}
     if(t==='e6'){startTalk('e6');e.x=G.cam+W-90;e.y=(FY0+FY1)/2;e.face=-1;e.cd=1.2;e.palCd=6}
@@ -3388,8 +3388,8 @@ const B3_PROPS=[['flagfcl',140],['rig',330],['sp_adidas',520],['kayak',640],['um
   ['flagfcl',2010],['rig',2240],['sp_maxi',2420],['sand',2540],['umb',2640],['cooler',2730],['tent',2860],['flagcb',3000],['kayak',3100],['sp_getstrong',3260],['plates',3400],['sup',3500],['board',3620],['flagfcl',3720],['umb',3870]];
 const B3_ARCH_X=4140;
 const WAVES3=[ // k1 = E1 del nivel 3; el resto, jueces del nivel 1 provisionales hasta tener más competidores
-  {x:900,e:['k1','k3']},{x:1250,e:['k1','k2','k3']},{x:1800,e:['k2','k3','k1']},
-  {x:2500,e:['k3','k1','k2','k1']},{x:3250,e:['k2','k3','k2','k1']},{x:3700,e:['k3','k1','k2','k3']},{x:3950,e:['bri']}];
+  {x:900,e:['k1','k3']},{x:1250,e:['k1','k2','k3']},{x:1800,e:['k2','hj','k1']},
+  {x:2500,e:['k3','hj','k2','k1']},{x:3250,e:['k2','hj','k3','k1']},{x:3700,e:['hj','k3','k1','k2','hj']},{x:3950,e:['bri']}];
 function setLevel3(){G.lvl=3;try{musicTrack('beach')}catch(e){}WAVES.length=0;WAVES.push(...WAVES3);G.vendor=null;G.bought=true;G.shock=[];G.kbs=[];G.pals=[];G.waveI=0;G.lockX=null;G.cam=0;G.en.length=0;G.pick.length=0;G.crates=mkCrates();
   G.ath.forEach((a,i)=>{a.x=150-i*40;a.y=272+i*24;a.st='idle';a.carry=null});lvlTitle(3)}
 {const _t=lvlTitle;lvlTitle=function(n){_t(n);if(n===3)Object.assign(G.lvlT,{k:'g_nivel3',alt:'FITNESS CHALLENGE LEAGUE'})}}
@@ -4058,7 +4058,7 @@ function jpMusStop(){const s=JPM.src,g=JPM.g;if(!s)return;JPM.src=null;JPM.g=nul
 /* --- la fiesta se juega en el sitio: la cámara se queda quieta y van entrando competidores sin parar mientras dura el poder
    (así no se llega enseguida a Edu); al acabarse, se limpian los que queden y se sigue como siempre --- */
 const JP_ARENA_MAX=5,JP_ARENA_EVERY=1.1;
-function jpArenaSpawn(){const t=['k1','k2','k3'][Math.floor(Math.random()*3)],left=Math.random()<.4,x=left?G.cam-40:G.cam+W+40;
+function jpArenaSpawn(){const t=['k1','k2','k3','hj'][Math.floor(Math.random()*4)],left=Math.random()<.4,x=left?G.cam-40:G.cam+W+40;
   const e=mkJudge(t,x,rr(FY0+8,FY1-6),G.cat);e.face=left?1:-1;G.en.push(e)}
 {const _u=updStreet;updStreet=function(dt){const J=jpOn()&&G.phase==='street'&&!G.talk&&G.jp;
   if(J&&J.arena!=null){if(J.n>0){G.lockX=J.arena;G.cleared=false;J.spT-=dt;const alive=G.en.filter(e=>!e.dead&&e.st!=='dying').length;
@@ -4108,6 +4108,48 @@ function jpFrame(o){const t=o.t||0;if(o.jpR==='throw')return 1;let d=t;
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(e.x),Math.round(e.y),24,5,0,0,7);g.fill();
   jpBlit(g,JPI[1],f,e.x,e.y,(e.face||1)<0);
   if(e.hp<e.maxHp){const w=30;bar(g,Math.round(e.x-w/2),Math.round(e.y-96),w,4,e.hp/e.maxHp,'#ff9a1a','#10303a')}}}
+/* ===== HEADJUDGE del nivel 3 (tipo 'hj'): juez principal de la FCL, con la camiseta azul de STAFF.
+   Se acerca, levanta la tablilla por encima del hombro y te la estampa (aviso claro: sal del carril o pégale antes).
+   Grita «¡NO REP!». Patada en el culo, KO y baile de Joanpi con sus propios sprites; se levanta con su animación completa. --- */
+const HJD={"pages":["assets/hj_0.webp"],"fr":{"idle":[[0,0,86,175,43.2,175.0,0],[88,0,86,176,43.2,175.6,0],[176,0,86,175,43.2,175.0,0],[264,0,86,176,43.2,176.1,0],[352,0,86,176,43.2,176.1,0],[440,0,86,177,43.2,176.7,0],[528,0,86,177,43.2,176.7,0],[616,0,86,177,42.9,176.7,0],[704,0,87,176,43.5,176.1,0],[793,0,86,176,43.2,175.6,0],[881,0,86,176,43.2,175.6,0],[969,0,86,176,43.2,175.6,0],[1057,0,86,175,43.2,175.0,0],[1145,0,86,175,43.2,175.0,0],[1233,0,86,174,42.9,174.4,0],[1321,0,86,174,43.2,174.4,0]],"walk":[[1409,0,67,175,33.7,175.0,0],[1478,0,81,175,40.4,175.0,0],[1561,0,95,175,47.4,175.0,0],[1658,0,76,175,38.1,175.0,0],[1736,0,67,175,33.7,175.0,0],[1805,0,68,175,34.0,175.0,0],[1875,0,87,175,43.6,175.0,0],[0,179,99,174,49.4,174.4,0],[101,179,99,175,49.7,175.0,0],[202,179,88,175,44.2,175.0,0],[292,179,80,175,40.1,175.0,0],[374,179,98,174,48.8,174.4,0],[474,179,83,175,41.3,175.0,0],[559,179,78,175,39.0,175.0,0],[639,179,73,175,36.6,175.0,0],[714,179,69,176,34.6,175.6,0]],"tb":[[785,179,97,175,48.3,175.0,0],[884,179,98,174,48.9,174.4,0],[984,179,99,174,49.7,174.4,0],[1085,179,103,174,51.7,173.9,0],[1190,179,109,178,54.3,177.8,0],[1301,179,123,180,61.4,179.5,0],[1426,179,121,180,60.5,180.1,0],[1549,179,120,174,60.2,174.4,0],[1671,179,123,169,61.6,169.3,0],[1796,179,131,163,65.6,162.5,0],[0,361,152,155,75.9,155.1,0],[154,361,161,149,80.4,149.4,0],[317,361,131,167,65.3,167.0,0],[450,361,112,174,56.0,173.9,0],[564,361,109,176,54.3,176.1,0],[675,361,102,177,50.9,176.7,0]],"hit":[[779,361,98,175,49.1,175.0,0],[879,361,93,174,46.6,173.9,0],[974,361,99,173,49.4,173.3,0],[1075,361,105,177,52.5,176.7,0],[1182,361,107,175,53.3,175.0,0],[1291,361,109,173,54.5,173.3,0],[1402,361,115,171,57.6,171.0,0],[1519,361,121,168,60.4,167.7,0],[1642,361,127,168,63.5,167.7,0],[1771,361,118,168,59.0,167.7,0],[1891,361,106,169,52.8,169.4,0],[0,540,101,169,50.5,169.4,0],[103,540,99,174,49.4,174.4,0],[204,540,102,176,50.8,176.1,0],[308,540,102,175,50.8,175.0,0],[412,540,104,174,51.9,174.4,0]],"kick":[[518,540,88,175,43.8,175.0,0],[608,540,93,175,46.5,175.0,0],[703,540,110,170,54.8,170.5,0],[815,540,151,165,75.7,165.4,0],[968,540,149,137,74.7,137.3,0],[1119,540,147,136,73.4,136.3,0],[1268,540,149,126,74.7,125.7,0],[1419,540,158,133,79.0,120.7,0],[1579,540,149,129,74.7,112.6,0],[1730,540,152,119,75.9,103.1,0],[1884,540,150,115,74.9,115.2,0],[0,718,157,103,76.9,102.6,0],[159,718,154,96,74.7,91.5,0],[315,718,144,77,70.4,76.9,0],[461,718,154,56,75.9,54.3,0],[617,718,160,45,80.2,43.2,0]],"ko":[[779,718,91,175,45.3,175.0,0],[872,718,88,173,44.0,173.5,0],[962,718,97,173,48.3,173.5,0],[1061,718,109,168,54.6,168.4,0],[1172,718,121,163,60.4,162.9,0],[1295,718,125,151,62.5,150.7,0],[1422,718,151,137,75.4,136.6,0],[1575,718,154,113,77.1,113.3,0],[1731,718,148,105,73.8,104.7,0],[1881,718,145,80,72.3,80.4,0],[0,895,148,73,73.8,73.3,0],[150,895,150,74,75.1,73.8,0],[302,895,144,71,72.1,70.8,0],[448,895,152,74,78.4,74.3,0],[602,895,152,74,77.9,74.3,0],[756,895,159,75,79.7,75.4,0]],"upf":[[917,895,171,56,85.6,52.8,0],[1090,895,171,63,85.3,60.0,0],[1263,895,169,79,84.4,74.4,0],[1434,895,168,98,84.2,93.3,0],[1604,895,169,121,84.4,114.4,0],[1775,895,167,119,83.6,119.4,0],[0,1018,162,118,81.1,117.8,0],[164,1018,162,120,80.8,120.0,0],[328,1018,156,127,65.8,127.2,0],[486,1018,127,136,63.3,136.1,0],[615,1018,112,150,55.8,150.0,0],[729,1018,127,146,63.6,145.6,0],[858,1018,111,171,55.3,171.1,0],[971,1018,104,171,52.2,171.1,0],[1077,1018,107,172,53.6,172.2,0],[1186,1018,114,175,57.2,175.0,0]],"upb":[[1302,1018,168,114,83.8,113.6,0],[1472,1018,165,102,82.4,101.7,0],[1639,1018,174,109,86.9,109.1,0],[1815,1018,162,131,81.0,130.7,0],[0,1195,170,148,85.2,147.7,0],[172,1195,158,131,79.0,131.2,0],[332,1195,160,140,80.1,140.3,0],[494,1195,150,140,75.0,139.8,0],[646,1195,149,143,63.4,137.5,0],[797,1195,130,150,65.1,150.0,0],[929,1195,128,152,64.2,152.3,0],[1059,1195,122,145,60.8,144.9,0],[1183,1195,115,175,57.4,175.0,0],[1300,1195,111,175,55.4,175.0,0],[1413,1195,109,175,54.5,175.0,0],[1524,1195,108,175,54.0,175.0,0]],"dance":[[1634,1195,90,175,44.9,175.0,0],[1726,1195,98,174,49.0,173.9,0],[1826,1195,117,174,58.3,173.9,0],[0,1372,122,174,60.8,174.4,0],[124,1372,119,174,59.4,173.9,0],[245,1372,96,175,47.9,175.0,0],[343,1372,94,174,46.8,173.9,0],[439,1372,92,173,46.0,172.8,0],[533,1372,110,169,55.0,168.9,0],[645,1372,110,168,55.0,168.4,0],[757,1372,105,165,52.6,164.5,0],[864,1372,118,169,59.2,169.5,0],[984,1372,107,173,53.7,172.8,0],[1093,1372,95,174,47.3,174.4,0],[1190,1372,90,176,44.9,175.6,0],[1282,1372,91,176,45.4,175.6,0]]},"u":0.5};
+{const off=ELITE_IMGS.length;HJD.pages.forEach(p=>ELITE_IMGS.push(lazyImg('l3',p)));for(const nm in HJD.fr)for(const f of HJD.fr[nm])f[6]+=off;
+  const F=HJD.fr,pick=(a,ix)=>ix.map(i=>a[i-1]);
+  ELITE.fr.hj={walk:F.walk,idle:F.idle,tb:F.tb,dance:F.dance,upf:F.upf,upb:F.upb,
+    hit:pick(F.hit,[1,3,5,7,9,11,13,15,16,16,16,16,16,16,16,16]),
+    fall:[...pick(F.ko,[1,3,4,5,6,7,8,9,10,11,14,15]),...pick(F.upb,[4,8,12,15])],
+    kas:[...pick(F.kick,[1,2,1,2,4,6,9,11,13,14,15,16]),...pick(F.upf,[4,9,12,15])]};
+  ELITE_T.add('hj');JPD.fr.hj={dance:F.dance}} // con baile propio: las notas de Joanpi le afectan (no es jefe)
+JT.hj={hp:95,spd:48,dmg:13,reach:34,wpn:'none',s:1,val:420,armor:false,mute:true};JPAL.hj=JPAL.base;
+L3_SHOUTS.hj=['¡NO REP!','¡ESO NO CUENTA!','¡REPITE ESA REP!','¡SIN EXTENSIÓN NO HAY REP!'];
+const HJ_T=1.3,HJ_HIT=10/16*HJ_T,HJ_UP=1.1;
+function updHJ(e,tg,dt){l3ShoutTick(e,dt);
+  switch(e.st){
+    case 'walk':{const dx=tg.x-e.x,dy=tg.y-e.y,tx=tg.x-Math.sign(dx||1)*48;
+      const mx=Math.abs(tx-e.x)>6?Math.sign(tx-e.x):0,my=Math.abs(dy)>4?Math.sign(dy)*.8:0;e.vx=mx*e.spd;e.vy=my*e.spd;e.face=dx>0?1:-1;e.ph+=dt*((mx||my)?1:0);
+      if(e.cd<=0&&Math.abs(dx)<72&&Math.abs(dy)<14&&athUp(tg)){e.st='tb';e.t=0;e.vx=e.vy=0;e.done=false;if(Math.random()<.5)faguShout(e,'¡NO REP!')}}break;
+    case 'tb':e.vx=e.vy=0;if(e.t<.4){const t2=nearestAth(e);if(t2)e.face=t2.x>e.x?1:-1}
+      if(!e.done&&e.t>=HJ_HIT){e.done=true;SFX.swing();
+        for(const a of G.ath){if(!athUp(a)||a.inv>0||a.st==='roll'||(a.z||0)>26)continue;const ddx=(a.x-e.x)*e.face;
+          if(ddx>4&&ddx<72&&Math.abs(a.y-e.y)<16){hurtAth(a,e.dmg,e.face,.4);SFX.hit();G.shake=Math.max(G.shake,.18);ftext(a.x,a.y-80,'¡NO REP!','#ffd23f',11)}}}
+      if(e.t>=HJ_T){e.st='walk';e.t=0;e.cd=rr(1.2,2.2)}break;
+  }
+  e.x=clamp(e.x+e.vx*dt,-60,LEVEL_W+60);e.y=clamp(e.y+e.vy*dt,FY0,FY1);
+}
+{const _u=updJudge;updJudge=function(e,dt){if(e.type!=='hj')return _u(e,dt);
+  if(e.st==='walk'||e.st==='tb'){e.t+=dt;e.bobT+=dt;e.flash=Math.max(0,e.flash-dt);e.cd=Math.max(0,e.cd-dt);e.inv=Math.max(0,e.inv-dt);updHJ(e,nearestAth(e),dt);return}
+  if(e.st==='getup'){e.t+=dt;e.bobT+=dt;e.flash=Math.max(0,e.flash-dt);e.vx=e.vy=0;e.inv=.2;if(e.t>=HJ_UP){e.st='walk';e.t=0;e.cd=rr(.5,1)}return}
+  return _u(e,dt)}}
+{const _f=e2Frame;e2Frame=function(e){if(e.type!=='hj')return _f(e);const t=e.t||0;
+  if(e.st==='tb')return['tb',Math.min(15,Math.floor(t/HJ_T*16))];
+  if(e.st==='getup')return[e.kicked?'upf':'upb',Math.min(15,Math.floor(t/HJ_UP*16))];
+  if(e.st==='walk'&&!e.vx&&!e.vy){e.kicked=false;return['idle',Math.floor((e.bobT||0)*8)%16]} // quieto: respira en guardia
+  return _f(e)}}
+{const _d=drawElite;drawElite=function(g,e){if(e.type!=='hj')return _d(g,e);
+  if(e.st==='dance'){const F=ELITE.fr.hj.dance,f=F[Math.floor((e.t||0)*10)%F.length],img=eliteImg(f),u=ELITE.u;
+    if(img){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(e.x),Math.round(e.y),24,5,0,0,7);g.fill();
+      g.save();g.translate(Math.round(e.x),Math.round(e.y));g.scale(e.face||1,1);g.drawImage(img,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore()}
+    if(e.hp<e.maxHp){const w=30;bar(g,Math.round(e.x-w/2),Math.round(e.y-96),w,4,e.hp/e.maxHp,'#ff9a1a','#10303a')}return}
+  _d(g,e);if(e.shout>0&&(e.st==='walk'||e.st==='tb'))drawBubble(g,e.shoutTxt,e.x,Math.round(e.y-112),e.face||1,bubLife(e.shout,1.5))}}
 function jpDJFrame(){const J=G.jp;if(J.sc!=='booth'&&J.sc!=='done')return 3; // 3 = mesa de mezclas sin Joanpi
   const L=G.ath[0];if(J.sc==='booth'&&L&&Math.abs(L.x-JP_X)<420)return Math.floor(G.run*2.5)%2?0:2; // saluda cuando os ve llegar
   return 2}
