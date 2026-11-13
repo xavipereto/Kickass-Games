@@ -4268,7 +4268,7 @@ function updWod(dt){
 function muFrame(m){ // fotograma del muscle-up según el estado del intento
   if(m.state==='pull')return Math.min(3,Math.floor(m.pull*4));
   if(m.state==='trans'){const rad=(1-m.rt/G.cat.muT)*28;return rad>13?4:5}
-  if(m.state==='pop'){const t=m.pt;return t<.12?6:t<.35?7:t<.45?6:t<.55?5:3}
+  if(m.state==='pop'){const t=m.pt;return t<.12?6:t<.35?7:t<.45?6:t<.55?5:t<.6?3:0}
   return m.ft<.2?3:2}
 function placeWod(w,dt){
   const k=Math.min(1,dt*2.4);let tg;
@@ -4540,6 +4540,39 @@ function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
   window.__nrb={mkJudge,spawnWave,get TALKS(){return TALKS},menuGo:p=>menuGo(p),playMode:()=>playMode(),startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
+/* ===== MUSCLE-UPS: subir y bajar de las anillas =====
+   Antes el atleta aparecía colgado de golpe y al soltarse caía de pie con las anillas desaparecidas.
+   Ahora: las anillas cuelgan siempre del rig; el que entra se agacha, salta con los brazos arriba y las agarra;
+   el que acaba se suelta, cae con los brazos arriba y amortigua al aterrizar. */
+const MU_ST=[300,360],MU_UP=.32,MU_GND=226;
+function muWant(w,i){return w.ph===1&&w.trans<=0&&i===w.mu.who}
+{const _p=placeWod;placeWod=function(w,dt){_p(w,dt);if(!G||!G.ath)return;
+  G.ath.forEach((a,i)=>{
+    const want=muWant(w,i),ry=animHas(a,'mu')?muRingY(a):114+70-36;
+    if(!a.ms)a.ms='g';
+    if(want&&(a.ms==='g'||a.ms==='land')){if(Math.abs(a.x-MU_ST[i])<4){a.ms='up';a.mt=0}else{a.y=MU_GND;a.st='walk';return}}
+    if(a.ms==='up'){a.mt+=dt;const k=a.mt/MU_UP;
+      if(!want){a.ms='down';a.vyM=0}
+      else if(k>=1){a.ms='hang'}
+      else{a.x=MU_ST[i];a.st='mujump';a.face=1;if(k<.3){a.jf=0;a.y=MU_GND}else{const e=ease((k-.3)/.7);a.jf=3;a.y=lerp(MU_GND,ry+64,e)}a.my=a.y;return}}
+    if(a.ms==='hang'){if(want)return;a.ms='down';a.vyM=0;a.my=animHas(a,'mu')?ry+60:a.y}
+    if(a.ms==='down'){a.vyM+=900*dt;a.my+=a.vyM*dt;a.st='mujump';a.jf=3;a.face=1;
+      if(a.my>=MU_GND){a.my=MU_GND;a.ms='land';a.mt=0}a.y=a.my;return}
+    if(a.ms==='land'){a.mt+=dt;a.y=MU_GND;if(a.mt<.16){a.st='mujump';a.jf=4;return}a.ms='g'}
+  })}}
+// dibujo de los fotogramas de salto (sin anillas) y de las anillas colgando del rig
+function drawMuJump(g,a){if(a.st!=='mujump')return false;const A=ANIMS[sprKey(a)];if(!A||!A.ok||!A.fr.jump)return false;
+  const f=A.fr.jump[Math.min(a.jf|0,A.fr.jump.length-1)],u=A.u.jump,sh=clamp(1-(MU_GND-a.y)/160,.3,1);
+  g.fillStyle='rgba(0,0,0,'+(.32*sh).toFixed(2)+')';g.beginPath();g.ellipse(Math.round(a.x),MU_GND,17*sh,5*sh,0,0,7);g.fill();
+  g.save();g.translate(Math.round(a.x),Math.round(a.y));g.imageSmoothingQuality=ISQ;g.drawImage(A.img,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore();
+  a._top=Math.round(a.y-f[5]*u);return true}
+function drawRestRings(g){if(!G||!G.ath)return;
+  G.ath.forEach((a,i)=>{if(G.wod&&G.wod.ph===1&&a.ms==='hang'&&a.st==='hang'&&animHas(a,'mu'))return; // las lleva el atleta
+    const x=MU_ST[i],y0=MU_BAR,yr=MU_BAR+11;
+    for(const dx of [-10,4]){g.fillStyle='#14121c';g.fillRect(x+dx-1,y0,2.4,yr-y0-3);
+      g.strokeStyle='#14121c';g.lineWidth=3.2;g.beginPath();g.arc(x+dx+.2,yr,3.6,0,7);g.stroke();
+      g.strokeStyle='#c99a5b';g.lineWidth=1.6;g.beginPath();g.arc(x+dx+.2,yr,3.6,0,7);g.stroke()}})}
+{const _s=drawWodScene;drawWodScene=function(g,w,c){const ok=_s(g,w,c);if(ok)try{drawRestRings(g)}catch(e){}return ok}}
 /* ===== BUY-OUT: ASSAULT BIKE =====
    Tras el handstand, los dos atletas se suben a una bike cada uno y machacan para sumar calorías entre los dos.
    La aguja de ritmo tiene una zona verde (más calorías); si se queda en rojo demasiado rato, os reventáis y el ritmo cae. */
@@ -4562,7 +4595,7 @@ function updBike(w,c,dt,act){const b=w.bk;if(!b){wodMeta(w);return}
   b.cal=Math.min(b.tot,b.cal+b.spd*c.bkRate*dt*(zone?1.2:1));
   if(Math.floor(b.cal)>before){w.pts+=zone?30:20;if(zone){w.clapT=.6;if(b.fbT<=0){b.fb='¡BUEN RITMO!';b.fbT=.5;b.fbC='#3ddc84'}}}
   if(b.cal>=b.tot){b.cal=b.tot;wodMeta(w)}}
-function drawBikeAth(g,a,w){if(a.st!=='bike'&&a.st!=='bikewin')return false;
+function drawBikeAth(g,a,w){if(a.st==='mujump')return drawMuJump(g,a);if(a.st!=='bike'&&a.st!=='bikewin')return false;
   const k=a.pal&&a.pal.spr,S=BIKE_SPR[k];if(!S||!bkOk(k))return false;
   const i=G.ath.indexOf(a),f=a.st==='bikewin'?S.win:S.fr[(Math.floor((w.bk?w.bk.ang:0)+(i>0?3:0))%6+6)%6],u=S.u;
   g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.ellipse(Math.round(a.x),Math.round(a.y),30,5,0,0,7);g.fill();
@@ -4615,7 +4648,9 @@ function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
 {const _s=startWod;startWod=function(){_s();GH_D.gx=GH_D.mx=null;try{G.ghost=wodGhostFor(G.cat)}catch(e){G.ghost=null}}}
 {const _u=updWod;updWod=function(dt){
   const w=G.wod;if(!w)return _u(dt);const c=G.cat,ph0=w.ph;
+  const mnt=w.ph===1&&w.mu.state==='pull'&&G.ath[w.mu.who]&&G.ath[w.mu.who].ms!=='hang';
   _u(dt);
+  if(mnt&&w.ph===1&&w.mu.state!=='pop'){w.mu.state='pull';w.mu.pull=0}
   if(G.wod!==w)return;
   w.ghRec=w.ghRec||[];const n=wodDone(w,c);while(w.ghRec.length<n)w.ghRec.push(Math.round(w.t*10));
   if(w.ghMsg)w.ghMsg.t-=dt;
