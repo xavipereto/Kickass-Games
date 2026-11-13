@@ -626,7 +626,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
           <div class="card how">
             <h3>WOD</h3>
             <div class="keys">
-              <span><kbd>Z</kbd> <kbd>Espacio</kbd></span><span>Snatch y muscle-up</span>
+              <span><kbd>Z</kbd> <kbd>Espacio</kbd></span><span>Snatch, muscle-up y bike</span>
               <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span><span>Handstand walk (alternos)</span>
             </div>
             <h3>GENERAL</h3>
@@ -711,9 +711,9 @@ function fmtT(s){s=Math.max(0,s);const m=Math.floor(s/60),x=s-m*60;return m+':'+
 function fmtN(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
 
 const CATS={
-  open:{name:'Open',hp:.8,dmg:.8,extra:0,mult:1,cap:180,snV:1.1,snHw:.16,snN:12,muN:8,muAdd:.12,muDecay:.14,muT:1.2,hsN:15,hsDrift:.5},
-  rx:{name:'RX',hp:1,dmg:1,extra:0,mult:1.25,cap:165,snV:1.45,snHw:.115,snN:18,muN:8,muAdd:.1,muDecay:.2,muT:.95,hsN:25,hsDrift:.75},
-  elite:{name:'Élite',hp:1.3,dmg:1.2,extra:1,mult:1.5,cap:150,snV:1.85,snHw:.08,snN:24,muN:8,muAdd:.085,muDecay:.27,muT:.75,hsN:40,hsDrift:1.0}
+  open:{name:'Open',hp:.8,dmg:.8,extra:0,mult:1,cap:195,snV:1.1,snHw:.16,snN:12,muN:8,muAdd:.12,muDecay:.14,muT:1.2,hsN:15,hsDrift:.5,bkN:10,bkAdd:.11,bkDecay:.3,bkRate:1.6},
+  rx:{name:'RX',hp:1,dmg:1,extra:0,mult:1.25,cap:180,snV:1.45,snHw:.115,snN:18,muN:8,muAdd:.1,muDecay:.2,muT:.95,hsN:25,hsDrift:.75,bkN:15,bkAdd:.095,bkDecay:.34,bkRate:1.6},
+  elite:{name:'Élite',hp:1.3,dmg:1.2,extra:1,mult:1.5,cap:165,snV:1.85,snHw:.08,snN:24,muN:8,muAdd:.085,muDecay:.27,muT:.75,hsN:40,hsDrift:1.0,bkN:20,bkAdd:.08,bkDecay:.38,bkRate:1.6}
 };
 
 /* ---------- sonido ---------- */
@@ -2956,7 +2956,7 @@ function fillCtrlPage(){const T=app.classList.contains('touch'),cards=$$('#menu 
   const H3=(key,alt)=>'<h3><img class="wimg h3i" alt="'+alt+'" src="'+TXT_IMG[key]+'"></h3>';
   const street=T?[['Joystick','Moverse (más inclinado = correr)'],['X','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['Y','Patada'],['A','Salto (en el aire, Y = patada voladora)'],['B','Esquiva (voltereta)'],['L1','Foto de equipo'],['R1','Cambiar de atleta'],['X / Y','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + Y','¡Kick ass! Camina contra un juez para agarrarlo y pulsa Y (o X)'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls'],['X','Junto a tu pareja en el suelo: levantarla · en la tienda: comprar']]
     :[['WASD ←↑↓→','Moverse'],['Z','Golpe de barra (combo de 3) · si llevas mancuerna o wall ball, la lanzas'],['X','Patada'],['C','Salto (en el aire, X = patada voladora)'],['Espacio','Esquiva (voltereta)'],['V','Foto de equipo'],['Q','Cambiar de atleta'],['Z / X','Golpear o chutar la wall ball de un juez para devolvérsela'],['→ + X','¡Kick ass! Camina contra un juez para agarrarlo y pulsa X (o Z)'],['📦','Rompe los cajones: dan batidos, mancuernas y wall balls'],['Z','Junto a tu pareja en el suelo: levantarla · en la tienda: comprar']];
-  const wod=T?[['X / A','Snatch y muscle-up'],['◀ ▶','Handstand walk (joystick, alternando)']]:[['Z Espacio','Snatch y muscle-up'],['← →','Handstand walk (alternos)']];
+  const wod=T?[['X / A','Snatch, muscle-up y bike'],['◀ ▶','Handstand walk (joystick, alternando)']]:[['Z Espacio','Snatch, muscle-up y bike'],['← →','Handstand walk (alternos)']];
   const gen=T?[['START','Pausa'],['SELECT','Ver controles']]:[['P','Pausa'],['H','Ver controles'],['M','Sonido'],['F','Pantalla completa']];
   cards[0].innerHTML=H3('m_calle','Calle')+'<div class="keys">'+k(street)+'</div>';
   cards[1].innerHTML=H3('m_wod','WOD')+'<div class="keys">'+k(wod)+'</div>'+H3('m_general','General')+'<div class="keys">'+k(gen)+'</div><p class="tiny">'+(T?'Con teclado o mando físico los controles cambian solos.':'También puedes jugar con un mando (X barra/lanzar · Y patada · A salto · B esquiva · R1 cambio · L1 foto).')+' Tu pareja pelea sola a tu lado.</p>'}
@@ -4195,7 +4195,7 @@ function wodFail(sec,msg){
 }
 function wodOk(sec,msg,col){if(G.wod)G.wod.clapT=1.1;sec.fb=msg;sec.fbT=.6;sec.fbC=col||'#3ddc84'}
 function liftU(l){const t=l.t;return t<.35?ease(t/.35):t<.6?1:t<.9?1-ease((t-.6)/.3):0}
-function nextPhase(){const w=G.wod;w.ph++;w.trans=1.5;SFX.go();if(w.ph===1){setActLabel('TIRAR');bigMsg('MUSCLE-UPS',1.3)}else if(w.ph===2){setActLabel('—');bigMsg('HANDSTAND WALK',1.3)}}
+function nextPhase(){const w=G.wod;w.ph++;w.trans=1.5;SFX.go();if(w.ph===1){setActLabel('TIRAR');bigMsg('MUSCLE-UPS',1.3)}else if(w.ph===2){setActLabel('—');bigMsg('HANDSTAND WALK',1.3)}else if(w.ph===3){setActLabel('PEDALEAR');bigMsg('BUY-OUT · BIKE',1.3)}}
 function updWod(dt){
   const w=G.wod,c=G.cat;
   updFx(dt);w.cheerT+=dt;w.shoutT=Math.max(0,w.shoutT-dt);w.clapT=Math.max(0,(w.clapT||0)-dt);
@@ -4207,7 +4207,7 @@ function updWod(dt){
     placeWod(w,dt);return;
   }
   if(w.goT>0)w.goT-=dt;
-  if(w.ph<3){w.t+=dt;G.run+=dt;if(w.t>=c.cap){return finishRun('timeout')}}
+  if(w.ph<4){w.t+=dt;G.run+=dt;if(w.t>=c.cap){return finishRun('timeout')}}
   const s=w.sn,m=w.mu,h=w.hs;
   [s,m,h].forEach(x=>x.fbT=Math.max(0,x.fbT-dt));
   if(w.trans>0)w.trans-=dt;
@@ -4254,10 +4254,10 @@ function updWod(dt){
         if(side!==h.last){h.last=side;const before=h.d;h.d=Math.min(h.tot,h.d+.4);w.pts+=3;SFX.click();if(before<h.tot/2&&h.d>=h.tot/2){h.a=0;wodOk(h,'¡RELEVO!','#4fe3df')}}
       }
       if(Math.abs(h.a)>=1){const seg=h.d>=h.tot/2?h.tot/2:0;h.d=Math.max(seg,h.d-1.5);h.a=0;h.last=0;h.fall=1;wodFail(h,'¡TE CAES!')}
-      if(h.d>=h.tot){h.d=h.tot;w.ph=3;w.endT=0;G.shake=.2;SFX.win();bigMsg('¡META!',2.4);setActLabel('—');
-        for(let i=0;i<90;i++)G.parts.push({x:rr(380,640),y:rr(-20,60),vx:rr(-40,40),vy:rr(20,110),life:rr(1.6,3),max:3,col:['#08C5C1','#4fe3df','#ffd23f','#3ddc84','#fff'][i%5],sz:3,g:60})}
+      if(h.d>=h.tot){h.d=h.tot;nextPhase()}
     }
   }
+  else if(w.ph===3)updBike(w,c,dt,act);
   else{ // meta
     w.endT+=dt;if(w.endT>=2.6)finishRun('done');
   }
@@ -4275,11 +4275,12 @@ function placeWod(w,dt){
   else if(w.ph===1)tg=[[300,226],[360,226]];
   else{
     const hx=430+Math.min(1,hs.d/hs.tot)*160,first=hs.d<hs.tot/2;
-    tg=w.ph===3?[[614,226],[584,226]]:first?[[hx,226],[548,226]]:[[452,226],[hx,226]];
+    tg=w.ph>=3?[[BK_X[0],226],[BK_X[1],226]]:first?[[hx,226],[548,226]]:[[452,226],[hx,226]];
   }
   G.ath.forEach((a,i)=>{
     const ox=a.x,oy=a.y;a.bobT+=dt;a.flash=Math.max(0,a.flash-dt);
     a.inv180=false;a.hu=0;a.lu=0;
+    if(w.ph>=3&&(w.ph===4||w.trans<=0)){a.x=tg[i][0];a.y=tg[i][1];a.face=1;a.st=w.ph===4?'bikewin':'bike';return}
     const hsActive=w.ph===2&&w.trans<=0&&i===(hs.d<hs.tot/2?0:1);
     const hangActive=w.ph===1&&w.trans<=0&&i===mu.who;
     if(hsActive){a.x=tg[i][0];a.y=tg[i][1]}
@@ -4307,13 +4308,14 @@ function drawWodScene(g,w,c){
   g.drawImage(WODI.room,0,-53,640,360);
   g.fillStyle='rgba(6,10,30,.18)';g.fillRect(0,0,640,240);
   // público en la grada: atento → aplaude con cada repetición buena → celebra en la meta
-  const fr=w.ph===3?2:(w.clapT>0?(Math.floor(w.cheerT*7)%2?1:0):0),cr='crowd'+fr,[cw,ch]=WOD_M.crowd,s=.127;
+  const fr=w.ph===4?2:(w.clapT>0?(Math.floor(w.cheerT*7)%2?1:0):0),cr='crowd'+fr,[cw,ch]=WOD_M.crowd,s=.127;
   [[148,0,0],[282,1,.7]].forEach(([x,fl,ph])=>{const b=fr===2?-Math.abs(Math.sin(w.cheerT*8+ph))*3:0;wImg(g,cr,x,196-ch*s+b,cw*s,ch*s,fl)});
   // pizarra con el WOD
   const [bw,bh]=WOD_M.board,bs=.1363,bx=455,by=22;wImg(g,'board',bx,by,bw*bs,bh*bs);
   T(g,'WOD EN PAREJA · '+c.name.toUpperCase(),bx+82,by+43,F_D(8),'#c0142e','center');
   const L=[[w.sn.tot+' SNATCH 80 KG',w.sn.n,w.sn.tot,0],[w.mu.tot+' MUSCLE-UPS',w.mu.n,w.mu.tot,1],[w.hs.tot+' M HANDSTAND',Math.floor(w.hs.d),w.hs.tot,2]];
-  L.forEach((l,i)=>{const done=w.ph>l[3],cur=w.ph===l[3],col=done?'#1a8f4a':cur?'#0b2a6b':'#8a8a99',y=by+63+i*18,lb=cur?'▶ '+['SNATCH 80 KG','MUSCLE-UPS','HANDSTAND'][i]:(done?'✓ ':'')+l[0];T(g,fitText(g,lb,F_U(12),cur?104:146),bx+10,y,F_U(12),col);if(cur)T(g,l[1]+'/'+l[2]+(i===2?' m':''),bx+160,y,F_U(13),'#c0142e','right')});
+  if(w.bk)L.push([w.bk.tot+' CAL BIKE',Math.floor(w.bk.cal),w.bk.tot,3]);
+  L.forEach((l,i)=>{const done=w.ph>l[3],cur=w.ph===l[3],col=done?'#1a8f4a':cur?'#0b2a6b':'#8a8a99',y=by+56+i*14,lb=cur?'▶ '+['SNATCH 80 KG','MUSCLE-UPS','HANDSTAND','BIKE'][i]:(done?'✓ ':'')+l[0];T(g,fitText(g,lb,F_U(12),cur?100:146),bx+10,y,F_U(12),col);if(cur)T(g,l[1]+'/'+l[2]+(i===2?' m':i===3?' cal':''),bx+160,y,F_U(13),'#c0142e','right')});
   // material de decoración al fondo
   const P=[['kb',2,46],['box',196,34],['rope',405,26],['ball',433,20],['bike',452,40]];
   for(const [k,x,wd] of P){const [iw,ih]=WOD_M[k],hh=wd*ih/iw;wImg(g,k,x,214-hh,wd,hh)}
@@ -4350,7 +4352,7 @@ function drawWod(g){
   for(const a of ath){
     const o=a;o.pose=null;if(a.inv180){o.pose=poseOf({st:'hsw',t:0})}
     if(a.st==='lift'){a.lu=a.lu||0}
-    drawPerson(g,a);
+    if(!drawBikeAth(g,a,w))drawPerson(g,a);
   }
   // marcador del activo
   const actI=w.ph===0?w.sn.n%2:w.ph===1?w.mu.who:w.ph===2?(w.hs.d<w.hs.tot/2?0:1):-1;
@@ -4368,9 +4370,9 @@ function drawWod(g){
   T(g,'NO REP '+G.noRep,HR,32,F_U(13),'#ff7a7a','right');
   // panel
   g.fillStyle='rgba(4,14,26,.95)';g.fillRect(10,242,620,112);g.strokeStyle='#4fe3df';g.lineWidth=2;g.strokeRect(11,243,618,110);
-  if(w.ph===0)uiSnatch(g,w);else if(w.ph===1)uiMU(g,w);else if(w.ph===2)uiHSW(g,w);else{if(!drawTxt(g,'t_meta',W/2,286,50))T(g,'¡META!',W/2,300,F_D(40),'#ffd23f','center','#04101a');T(g,'Reto completado a '+fmtT(w.t),W/2,326,F_U(20),'#fff','center')}
+  if(w.ph===0)uiSnatch(g,w);else if(w.ph===1)uiMU(g,w);else if(w.ph===2)uiHSW(g,w);else if(w.ph===3)uiBike(g,w);else{if(!drawTxt(g,'t_meta',W/2,286,50))T(g,'¡META!',W/2,300,F_D(40),'#ffd23f','center','#04101a');T(g,'Reto completado a '+fmtT(w.t),W/2,326,F_U(20),'#fff','center')}
   // cuenta atrás
-  if(!w.run){const n=Math.ceil(w.cd),num=n>=1&&n<=3,fr=w.cd-Math.floor(w.cd),pop=num?1+Math.max(0,fr-.7)*1.6:1;if(!drawTxt(g,num?'t_'+n:'t_listos',W/2,132,num?78:52,1,pop))T(g,num?String(n):'¿LISTOS?',W/2,150,F_D(num?72:36),'#ffd23f','center','#04101a');T(g,'Snatch · Muscle-up · Handstand walk',W/2,192,F_U(15),'#fff','center','#04101a')}
+  if(!w.run){const n=Math.ceil(w.cd),num=n>=1&&n<=3,fr=w.cd-Math.floor(w.cd),pop=num?1+Math.max(0,fr-.7)*1.6:1;if(!drawTxt(g,num?'t_'+n:'t_listos',W/2,132,num?78:52,1,pop))T(g,num?String(n):'¿LISTOS?',W/2,150,F_D(num?72:36),'#ffd23f','center','#04101a');T(g,'Snatch · Muscle-up · Handstand walk · Bike',W/2,192,F_U(15),'#fff','center','#04101a')}
   else if(w.goT>0){const a=clamp(w.goT*2,0,1);if(!drawTxt(g,'t_ya',W/2,132,72,a,1+Math.max(0,w.goT-.75)*1.5)){g.globalAlpha=a;T(g,'¡YA!',W/2,150,F_D(64),'#3ddc84','center','#04101a');g.globalAlpha=1}}
   if(G.bigT>0&&G.bigMsg)drawBig(g,G.bigMsg,116,clamp(G.bigT*2,0,1));
   if(G.flash>0){g.fillStyle='rgba(255,255,255,'+G.flash+')';g.fillRect(0,0,W,H)}
@@ -4384,7 +4386,7 @@ function panelHead(g,title,count,tot,help){
 }
 function fbText(g,sec,x,y){if(sec.fbT>0){const a=clamp(sec.fbT*3,0,1),k=TXT_KEY[sec.fb];if(k&&drawTxt(g,k,x,y-6,26,a,1+Math.max(0,sec.fbT-.5)*.8))return;g.globalAlpha=a;T(g,sec.fb,x,y,F_D(15),sec.fbC,'center','#04101a');g.globalAlpha=1}}
 function uiSnatch(g,w){
-  const s=w.sn;panelHead(g,'1/3 · SNATCH 80 KG',s.n,s.tot,'Pulsa con el marcador en la zona verde. El centro dorado da bonus. Fallar es NO REP.');
+  const s=w.sn;panelHead(g,'1/4 · SNATCH 80 KG',s.n,s.tot,'Pulsa con el marcador en la zona verde. El centro dorado da bonus. Fallar es NO REP.');
   const x=252,y=286,bw=360,h=22;
   R(g,x-2,y-2,bw+4,h+4,'#000');R(g,x,y,bw,h,'#143347');
   R(g,Math.round(x+(s.zc-s.hw)*bw),y,Math.round(s.hw*2*bw),h,'#2f9e5f');
@@ -4395,7 +4397,7 @@ function uiSnatch(g,w){
   T(g,'Turno: '+(s.n%2?'tu pareja':'tú'),432,256,F_U(13),'#8fb6c4','center');
 }
 function uiMU(g,w){
-  const m=w.mu;panelHead(g,'2/3 · MUSCLE-UPS',m.n,m.tot,'1) Machaca para subir. 2) Cuando el aro blanco encaje en el círculo dorado, pulsa una vez.');
+  const m=w.mu;panelHead(g,'2/4 · MUSCLE-UPS',m.n,m.tot,'1) Machaca para subir. 2) Cuando el aro blanco encaje en el círculo dorado, pulsa una vez.');
   const x=252,y=268,bw=366;
   T(g,m.state==='trans'?'¡TRANSICIÓN!':'TIRÓN',x,262,F_D(11),'#4fe3df');
   R(g,x-2,y-2,bw+4,16,'#000');R(g,x,y,bw,12,'#143347');R(g,x,y,Math.round(bw*clamp(m.pull,0,1)),12,m.state==='trans'?'#ffd23f':'#4fe3df');
@@ -4407,7 +4409,7 @@ function uiMU(g,w){
   T(g,m.state==='pull'?(touchy()?'Machaca  A':'Machaca Z / ESPACIO'):m.state==='trans'?'¡AHORA!':'',616,322,F_U(15),'#fff','right');
 }
 function uiHSW(g,w){
-  const h=w.hs;panelHead(g,'3/3 · HANDSTAND WALK',h.d.toFixed(1)+' m',h.tot+' m','Alterna ◀ ▶ para avanzar. Si te inclinas, toca el lado contrario. A mitad hay relevo.');
+  const h=w.hs;panelHead(g,'3/4 · HANDSTAND WALK',h.d.toFixed(1)+' m',h.tot+' m','Alterna ◀ ▶ para avanzar. Si te inclinas, toca el lado contrario. A mitad hay relevo.');
   const x=282,y=272,bw=300;
   const next=h.last===-1?1:h.last===1?-1:0;
   T(g,'◀',250,290,F_D(22),next===-1||next===0?'#ffd23f':'#554a88','center');T(g,'▶',614,290,F_D(22),next===1||next===0?'#ffd23f':'#554a88','center');
@@ -4536,6 +4538,45 @@ function init(){
   buildBG();buildWodBG();initUI();initScreens();resize();refreshRank();initRanking();requestAnimationFrame(frame);
   window.__nrb={mkJudge,spawnWave,get TALKS(){return TALKS},menuGo:p=>menuGo(p),playMode:()=>playMode(),startWod:()=>startWod(),mkCrates:()=>mkCrates(),enterBox:()=>enterBox(),PLAY,get AC(){return AC},get MUS(){return MUS},get MIX(){return MIX},get BUS(){return BUS},get muted(){return muted},get IMUS(){return IMUS},drawPerson:(g,o)=>drawPerson(g,o),ANIMS,get G(){return G},startGame,update,draw,press:pressK,release:releaseK,clearEdges,get mode(){return mode},CATS,finishRun,toMenu:()=>{$('#intro').hidden=true;$('#title').hidden=true;showMenu()}};
 }
+/* ===== BUY-OUT: ASSAULT BIKE =====
+   Tras el handstand, los dos atletas se suben a una bike cada uno y machacan para sumar calorías entre los dos.
+   La aguja de ritmo tiene una zona verde (más calorías); si se queda en rojo demasiado rato, os reventáis y el ritmo cae. */
+const BIKE_SPR={"atl_bar":{"atlas":"assets/bike_atl_bar.webp","fr":[[0,0,93,140,41.0,140],[95,0,93,140,41.1,140],[190,0,93,141,41.1,141],[285,0,94,142,41.4,142],[381,0,93,140,41.3,140],[476,0,93,140,41.0,140]],"win":[571,0,161,164,108.4,158.8],"u":0.6},"atl_dumb":{"atlas":"assets/bike_atl_dumb.webp","fr":[[0,0,95,140,41.1,140],[97,0,95,140,41.1,140],[194,0,96,140,41.1,140],[292,0,96,141,41.1,141],[390,0,96,140,41.2,140],[488,0,96,140,41.1,140]],"win":[586,0,163,161,109.4,158.6],"u":0.6},"atl_ball":{"atlas":"assets/bike_atl_ball.webp","fr":[[0,0,93,141,41.3,141],[95,0,93,140,40.9,140],[190,0,93,141,41.0,141],[285,0,93,140,41.0,140],[380,0,93,140,40.9,140],[475,0,93,140,41.0,140]],"win":[570,0,157,165,106.7,160.0],"u":0.6},"atl_f":{"atlas":"assets/bike_atl_f.webp","fr":[[0,0,96,140,43.8,140],[98,0,96,140,43.5,140],[196,0,94,140,42.8,140],[292,0,95,141,43.1,141],[389,0,96,140,43.4,140],[487,0,96,140,43.6,140]],"win":[585,0,160,179,110.2,174.3],"u":0.6}};
+const BK_X=[290,378],BK_G0=.6,BK_RED=.9,BK_MAX=1.08,BK_HEAT=1.4;
+const BKI={};for(const k in BIKE_SPR){const i=new Image();i.src=BIKE_SPR[k].atlas;BKI[k]=i}
+const bkOk=k=>BKI[k]&&BKI[k].complete&&BKI[k].naturalWidth>0;
+{const _s=startWod;startWod=function(){_s();if(G.wod)G.wod.bk={cal:0,tot:G.cat.bkN,spd:0,heat:0,ang:0,lock:0,fb:'',fbT:0,fbC:'#fff'}}}
+function wodMeta(w){w.ph=4;w.endT=0;G.shake=.2;SFX.win();bigMsg('¡META!',2.4);setActLabel('—');
+  for(let i=0;i<90;i++)G.parts.push({x:rr(200,480),y:rr(-20,60),vx:rr(-40,40),vy:rr(20,110),life:rr(1.6,3),max:3,col:['#08C5C1','#4fe3df','#ffd23f','#3ddc84','#fff'][i%5],sz:3,g:60})}
+function updBike(w,c,dt,act){const b=w.bk;if(!b){wodMeta(w);return}
+  b.fbT=Math.max(0,b.fbT-dt);b.ang+=dt*b.spd*14;
+  if(w.trans>0)return;
+  b.lock=Math.max(0,b.lock-dt);
+  if(act&&b.lock<=0)b.spd=Math.min(BK_MAX,b.spd+c.bkAdd);
+  b.spd=Math.max(0,b.spd-c.bkDecay*dt*(.6+b.spd*.6));
+  if(b.spd>BK_RED){b.heat+=dt;if(b.heat>=BK_HEAT){b.heat=0;b.spd=.15;b.lock=.9;b.fb='¡REVENTADOS!';b.fbT=1;b.fbC='#ff5555';G.shake=.18;SFX.norep();w.shoutT=1.1;w.shoutTxt='¡Que os reventáis! ¡Ritmo!';w.shoutX=Math.random()<.5?40:608}}
+  else b.heat=Math.max(0,b.heat-dt*.7);
+  const zone=b.spd>=BK_G0&&b.spd<=BK_RED,before=Math.floor(b.cal);
+  b.cal=Math.min(b.tot,b.cal+b.spd*c.bkRate*dt*(zone?1.2:1));
+  if(Math.floor(b.cal)>before){w.pts+=zone?30:20;if(zone){w.clapT=.6;if(b.fbT<=0){b.fb='¡BUEN RITMO!';b.fbT=.5;b.fbC='#3ddc84'}}}
+  if(b.cal>=b.tot){b.cal=b.tot;wodMeta(w)}}
+function drawBikeAth(g,a,w){if(a.st!=='bike'&&a.st!=='bikewin')return false;
+  const k=a.pal&&a.pal.spr,S=BIKE_SPR[k];if(!S||!bkOk(k))return false;
+  const i=G.ath.indexOf(a),f=a.st==='bikewin'?S.win:S.fr[(Math.floor((w.bk?w.bk.ang:0)+(i>0?3:0))%6+6)%6],u=S.u;
+  g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.ellipse(Math.round(a.x),Math.round(a.y),30,5,0,0,7);g.fill();
+  g.save();g.imageSmoothingEnabled=true;g.imageSmoothingQuality=ISQ;
+  g.drawImage(BKI[k],f[0],f[1],f[2],f[3],Math.round(a.x-f[4]*u),Math.round(a.y-f[5]*u),f[2]*u,f[3]*u);g.restore();
+  a._top=Math.round(a.y-f[5]*u);return true}
+function uiBike(g,w){const b=w.bk;if(!b)return;
+  panelHead(g,'4/4 · BUY-OUT: BIKE',Math.floor(b.cal),b.tot+' cal','Machacad para pedalear los dos. En verde sumáis más; si la aguja se queda en rojo, os reventáis.');
+  const x=252,y=280,bw=366,h=20,X=v=>Math.round(x+v/BK_MAX*bw);
+  T(g,'RITMO',x,272,F_D(11),'#4fe3df');
+  R(g,x-2,y-2,bw+4,h+4,'#000');R(g,x,y,bw,h,'#143347');R(g,X(BK_G0),y,X(BK_RED)-X(BK_G0),h,'#2f9e5f');R(g,X(BK_RED),y,x+bw-X(BK_RED),h,'#8a2230');
+  const mx=X(b.spd);R(g,mx-2,y-6,4,h+12,b.spd>BK_RED?'#ff5555':'#fff');g.fillStyle='#fff';g.fillRect(mx-5,y-9,10,3);
+  T(g,'CALOR',x,318,F_U(12),'#8fb6c4');R(g,x+46,310,bw-46,8,'#143347');R(g,x+46,310,Math.round((bw-46)*clamp(b.heat/BK_HEAT,0,1)),8,'#ff5555');
+  fbText(g,b,432,262);
+  T(g,touchy()?'Machaca  A':'Machaca  Z  ·  ESPACIO',432,340,F_U(15),'#fff','center');
+}
 /* ===== WOD: FANTASMA DEL RÉCORD =====
    Cada WOD completado guarda en 'scores' el campo wod = "1|<tiempo del WOD en décimas>|<décima en que se cerró cada repetición>"
    (cada snatch, cada muscle-up y cada metro de handstand). Al empezar el WOD se busca el más rápido de la misma categoría
@@ -4543,11 +4584,11 @@ function init(){
    la pizarra enseña el récord y al cerrar cada movimiento sale el split contra el récord. */
 const GH_LKEY='nrb_wodbest_v1',GH_X0=26,GH_X1=424,GH_Y=84;
 const GH_D={gx:null,mx:null,gt:0,mt:0};
-function wodUnits(c){return[c.snN,c.muN,c.hsN]}
-function wodN(c){return c.snN+c.muN+c.hsN}
-function wodEnc(w){return '1|'+Math.round(w.t*10)+'|'+(w.ghRec||[]).join(',')}
+function wodUnits(c){return[c.snN,c.muN,c.hsN,c.bkN]}
+function wodN(c){return c.snN+c.muN+c.hsN+c.bkN}
+function wodEnc(w){return '2|'+Math.round(w.t*10)+'|'+(w.ghRec||[]).join(',')}
 function wodDec(s,c){
-  if(typeof s!=='string'||s.length>2000)return null;const p=s.split('|');if(p[0]!=='1'||p.length<3)return null;
+  if(typeof s!=='string'||s.length>2000)return null;const p=s.split('|');if(p[0]!=='2'||p.length<3)return null;
   const wt=+p[1]/10,sp=p[2]?p[2].split(',').map(x=>+x/10):[];
   if(!(wt>0)||wt>c.cap+1||sp.length!==wodN(c))return null;
   for(let i=0;i<sp.length;i++)if(!(sp[i]>=0)||(i&&sp[i]<sp[i-1])||sp[i]>wt+.15)return null;
@@ -4561,9 +4602,9 @@ function wodGhostFor(c){
 function wodSaveLocalBest(c,team,wod,wt){try{const o=JSON.parse(localStorage.getItem(GH_LKEY)||'{}'),cur=o[c.name]&&wodDec(o[c.name].wod,c);
   if(!cur||wt<cur.wt){o[c.name]={team,wod,at:Date.now()};localStorage.setItem(GH_LKEY,JSON.stringify(o))}}catch(e){}}
 // repeticiones cerradas (para los splits): el handstand cuenta por metros
-function wodDone(w,c){if(w.ph>=3)return wodN(c);return Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(Math.floor(w.hs.d+1e-6),c.hsN):0)}
+function wodDone(w,c){if(w.ph>=4)return wodN(c);return Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(Math.floor(w.hs.d+1e-6),c.hsN):0)+(w.ph>=3&&w.bk?Math.min(Math.floor(w.bk.cal+1e-6),c.bkN):0)}
 // unidades hechas (con decimales) → posición 0..3 en la pista (un tramo igual por movimiento)
-function wodPos(k,c){const U=wodUnits(c);if(k<U[0])return k/U[0];k-=U[0];if(k<U[1])return 1+k/U[1];k-=U[1];return Math.min(3,2+k/U[2])}
+function wodPos(k,c){const U=wodUnits(c);let b=0;for(let i=0;i<4;i++){if(k<U[i]||i===3)return Math.min(4,b+k/U[i]);k-=U[i];b++}return 4}
 function ghostK(gh,t){const sp=gh.sp;if(t>=gh.wt)return sp.length;let i=0;while(i<sp.length&&sp[i]<=t)i++;if(i>=sp.length)return sp.length;
   const t0=i?sp[i-1]:0,t1=sp[i];return i+clamp((t-t0)/Math.max(.05,t1-t0),0,.999)}
 function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
@@ -4575,15 +4616,15 @@ function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
   w.ghRec=w.ghRec||[];const n=wodDone(w,c);while(w.ghRec.length<n)w.ghRec.push(Math.round(w.t*10));
   if(w.ghMsg)w.ghMsg.t-=dt;
   const gh=G.ghost,GT=gh?gh.team.toUpperCase():'';
-  if(gh&&w.ghRec.length&&w.ph<3){const U=w.ghRec.length,ahead=w.ghRec[U-1]/10<=gh.sp[U-1];
+  if(gh&&w.ghRec.length&&w.ph<4){const U=w.ghRec.length,ahead=w.ghRec[U-1]/10<=gh.sp[U-1];
     if(w.ghAhead!=null&&ahead!==w.ghAhead&&!(w.ghMsg&&w.ghMsg.t>0)&&w.t-(w.ghSw||-9)>4){w.ghSw=w.t;w.ghMsg={txt:ahead?'¡ADELANTÁIS A '+GT+'!':GT+' OS ADELANTA',col:ahead?'#3ddc84':'#ff7a7a',t:1.8}}
     w.ghAhead=ahead}
-  if(w.ph!==ph0&&ph0<3){ // fin de un movimiento: split
-    const U=wodUnits(c),cum=[U[0],U[0]+U[1],U[0]+U[1]+U[2]][ph0];
-    let txt=['SNATCH','MUSCLE-UPS','HANDSTAND'][ph0]+' '+fmtT(w.t),col='#fff';
+  if(w.ph!==ph0&&ph0<4){ // fin de un movimiento: split
+    const U=wodUnits(c),cum=[U[0],U[0]+U[1],U[0]+U[1]+U[2],wodN(c)][ph0];
+    let txt=['SNATCH','MUSCLE-UPS','HANDSTAND','BIKE'][ph0]+' '+fmtT(w.t),col='#fff';
     if(gh){const d=w.t-gh.sp[cum-1];txt+='  ·  '+fmtD(d)+' vs '+GT;col=d<=0?'#3ddc84':'#ff7a7a'}
     w.ghMsg={txt,col,t:3};
-    if(w.ph===3&&(!gh||w.t<gh.wt)){w.ghNew=true;bigMsg('¡NUEVO RÉCORD!',2.6);setTimeout(()=>{try{SFX.perfect()}catch(e){}},400)}
+    if(w.ph===4&&(!gh||w.t<gh.wt)){w.ghNew=true;bigMsg('¡NUEVO RÉCORD!',2.6);setTimeout(()=>{try{SFX.perfect()}catch(e){}},400)}
   }}}
 {const _f=finishRun;finishRun=function(kind){const w=G&&G.wod,c=G&&G.cat,was=G&&G.over;_f(kind);
   if(was||!G.final||!w||kind!=='done'||!w.ghRec||w.ghRec.length!==wodN(c))return;
@@ -4591,9 +4632,9 @@ function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
   if(w.ghNew)G.final.sub='¡NUEVO RÉCORD '+c.name.toUpperCase()+'! '+G.final.sub}}
 // pizarra: récord de la categoría (y el tachón cuando lo batís)
 {const _s=drawWodScene;drawWodScene=function(g,w,c){const ok=_s(g,w,c);if(!ok)return ok;
-  const gh=G.ghost,bx=455,by=22,y=by+113,f=F_U(11),mw=150;
+  const gh=G.ghost,bx=455,by=22,y=by+114,f=F_U(11),mw=150;
   const line=(pre,team,tm)=>{g.font=f;const tw=g.measureText(' '+tm).width;return fitText(g,pre+team.toUpperCase(),f,mw-tw)+' '+tm};
-  if(w.ghNew&&w.ph>=3){
+  if(w.ghNew&&w.ph>=4){
     if((w.endT||0)<.8&&gh){const s=line('RÉCORD ',gh.team,fmtT(gh.wt));T(g,s,bx+10,y,f,'#8a8a99');const tw=g.measureText(s).width*clamp((w.endT||0)/.5,0,1);g.fillStyle='#c0142e';g.fillRect(bx+9,y-4,tw+2,2)}
     else T(g,line('★ ',G.o.team,fmtT(w.t)),bx+10,y,f,'#1a8f4a');
   }else if(gh)T(g,line('RÉCORD ',gh.team,fmtT(gh.wt)),bx+10,y,f,'#0b2a6b');
@@ -4603,24 +4644,24 @@ function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
 function ghMini(x,st,ph,bob){const b=G.ath[0];return Object.assign({},b,{x,y:GH_Y,z:0,s:.36,face:1,st,t:0,ph,bobT:bob,flash:0,lead:false,inv180:false,pose:null,wpn:'none',hu:0,lu:0,vx:0,vy:0})}
 function drawGhostTrack(g){
   const w=G.wod,c=G.cat,gh=G.ghost;if(!w||!c||!gh||!G.ath||!G.ath[0])return;
-  const t=w.run?w.t:0,segW=(GH_X1-GH_X0)/3,now=performance.now()/1000;
+  const t=w.run?w.t:0,segW=(GH_X1-GH_X0)/4,now=performance.now()/1000;
   g.save();
   g.fillStyle='rgba(4,14,26,.66)';g.fillRect(GH_X0-16,42,GH_X1-GH_X0+32,62);g.fillStyle='#4fe3df';g.fillRect(GH_X0-16,42,GH_X1-GH_X0+32,1);
-  ['SNATCH','MUSCLE-UP','HANDSTAND'].forEach((s,i)=>{const x=GH_X0+i*segW,cur=w.ph===i;g.fillStyle=w.ph>i?'#3ddc84':cur?'#4fe3df':'#2f5368';g.fillRect(x+2,GH_Y+1,segW-4,3);T(g,s,x+segW/2,52,F_U(9),cur?'#4fe3df':'#8fb6c4','center')});
+  ['SNATCH','MUSCLE-UP','HANDSTAND','BIKE'].forEach((s,i)=>{const x=GH_X0+i*segW,cur=w.ph===i;g.fillStyle=w.ph>i?'#3ddc84':cur?'#4fe3df':'#2f5368';g.fillRect(x+2,GH_Y+1,segW-4,3);T(g,s,x+segW/2,52,F_U(9),cur?'#4fe3df':'#8fb6c4','center')});
   for(let i=0;i<4;i++){g.fillStyle=i%2?'#111':'#fff';g.fillRect(GH_X1+2,GH_Y-12+i*4,3,4);g.fillStyle=i%2?'#fff':'#111';g.fillRect(GH_X1+5,GH_Y-12+i*4,3,4)}
   const gx=GH_X0+wodPos(ghostK(gh,t),c)*segW,
-        mk=w.ph>=3?3:wodPos(Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(w.hs.d,c.hsN):0),c),mx=GH_X0+mk*segW;
+        mk=w.ph>=4?4:wodPos(Math.min(w.sn.n,c.snN)+(w.ph>=1?Math.min(w.mu.n,c.muN):0)+(w.ph>=2?Math.min(w.hs.d,c.hsN):0)+(w.ph>=3&&w.bk?Math.min(w.bk.cal,c.bkN):0),c),mx=GH_X0+mk*segW;
   if(GH_D.gx==null){GH_D.gx=gx;GH_D.mx=mx}
   const ogx=GH_D.gx,omx=GH_D.mx;GH_D.gx+=(gx-GH_D.gx)*.2;GH_D.mx+=(mx-GH_D.mx)*.2;
   const gMov=Math.abs(GH_D.gx-ogx)>.08,mMov=Math.abs(GH_D.mx-omx)>.08,gDone=t>=gh.wt;
   g.save();g.globalAlpha=.5;try{g.filter='grayscale(1) sepia(1) hue-rotate(155deg) saturate(2.5) brightness(1.25)'}catch(e){}
   drawPerson(g,ghMini(Math.round(GH_D.gx),gMov?'walk':gDone?'cheer':'idle',now*9,now));g.restore();
-  const me=ghMini(Math.round(GH_D.mx),mMov?'walk':w.ph>=3?'cheer':'idle',now*9+1,now+.5);drawPerson(g,me);
+  const me=ghMini(Math.round(GH_D.mx),mMov?'walk':w.ph>=4?'cheer':'idle',now*9+1,now+.5);drawPerson(g,me);
   {const x=Math.round(GH_D.mx),y=(me._top!=null?me._top:GH_Y-34)-4;g.fillStyle='#ffd23f';g.fillRect(x-4,y-5,8,2);g.fillRect(x-2,y-3,4,2)}
   // línea de abajo: mensaje del split o quién es el fantasma y la diferencia
   if(w.ghMsg&&w.ghMsg.t>0){const a=clamp(w.ghMsg.t*3,0,1);g.globalAlpha=a;T(g,fitText(g,w.ghMsg.txt,F_U(13),GH_X1-GH_X0+20),(GH_X0+GH_X1)/2,99,F_U(13),w.ghMsg.col,'center','#04101a');g.globalAlpha=1}
   else{T(g,fitText(g,'FANTASMA: '+gh.team.toUpperCase()+' · '+fmtT(gh.wt),F_U(11),250),GH_X0-6,99,F_U(11),'#9fdcff');
-    const U=(w.ghRec||[]).length;if(U&&w.ph<3){const d=w.ghRec[U-1]/10-gh.sp[U-1];T(g,fmtD(d),GH_X1+10,99,F_U(12),d<=0?'#3ddc84':'#ff7a7a','right')}}
+    const U=(w.ghRec||[]).length;if(U&&w.ph<4){const d=w.ghRec[U-1]/10-gh.sp[U-1];T(g,fmtD(d),GH_X1+10,99,F_U(12),d<=0?'#3ddc84':'#ff7a7a','right')}}
   g.restore()}
 {const _d=drawWod;drawWod=function(g){_d(g);try{drawGhostTrack(g)}catch(e){}}}
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('20px Bungee'),document.fonts.load('700 14px "Barlow Condensed"')]).catch(()=>{}):Promise.resolve();
