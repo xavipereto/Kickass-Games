@@ -3790,7 +3790,7 @@ setInterval(()=>{if(quizEl&&quizEl.style.display!=='none'&&(mode!=='play'||!G||!
   if(PLAY.mode!=='lvl'||PLAY.start==='1')return;
   G.tut=null;
   if(PLAY.start==='2'){cut2Play(()=>setLevel(2))}
-  else if(PLAY.start==='F'){startWod()}}}
+  else if(PLAY.start==='F'){wodIntro()}}}
 // rótulos con letras de ChatGPT cuando existan (si no, texto)
 const MW_=(k,alt)=>'<img class="wimg" alt="'+alt+'" src="'+TXT_IMG[k]+'">';
 for(const[s,k,alt]of[['#modeStory','g_historia','Modo historia'],['#modeLvl','g_elegir','Elegir nivel'],['[data-lvl="1"] .gtxt','g_nivel1','De camino al Lynx'],['[data-lvl="2"] .gtxt','g_nivel2','Lynx Social Training Club'],['[data-lvl="F"] .gtxt','g_final','Level WOD']]){
@@ -4643,8 +4643,13 @@ function wodPos(k,c){const U=wodUnits(c);let b=0;for(let i=0;i<4;i++){if(k<U[i]|
 function ghostK(gh,t){const sp=gh.sp;if(t>=gh.wt)return sp.length;let i=0;while(i<sp.length&&sp[i]<=t)i++;if(i>=sp.length)return sp.length;
   const t0=i?sp[i-1]:0,t1=sp[i];return i+clamp((t-t0)/Math.max(.05,t1-t0),0,.999)}
 function fmtD(d){return (d<=0?'−':'+')+Math.abs(d).toFixed(1)+' s'}
+/* --- intro del LEVEL WOD: el portal de la FCL los devuelve al Lynx y se encuentran el Level WOD (una versión por pareja) --- */
+const CUT4_IMG={"F":["assets/c493a8e8aa76.webp","assets/63295fba4c08.webp","assets/2fd1b39b4c12.webp","assets/13672203e21d.webp"],"M":["assets/f47d44eb26c1.webp","assets/0c77480f2dda.webp","assets/69c86768d167.webp","assets/998b4d5e8a54.webp"],"X":["assets/052283219120.webp","assets/d7e327df4fab.webp","assets/50bbb8572b30.webp","assets/0108d308260b.webp"]};
+const CUT4_CAPS=['El portal de la FCL se los volvió a tragar…','…y los escupió de vuelta en el Lynx Social Training Club.','—¿Un LEVEL WOD? ¿Ahora? Nadie les había avisado.','Sin superarlo no hay fecha ni inscripción para los KickAss Games. Toca darlo todo.'];
+{const _c=cutSet;cutSet=function(set){if(set==='wod'){const p=(G&&G.o&&G.o.pair)||'X';return {img:CUT4_IMG[p]||CUT4_IMG.X,caps:CUT4_CAPS,aria:'Escena: el Level WOD. Pulsa para avanzar.'}}return _c(set)}}
+function wodIntro(){if(/nocut/.test(location.hash))startWod();else cut2Play(()=>startWod(),'wod')}
 // pruebas: #wod entra directo al WOD final al empezar partida
-{const _sg=startGame;startGame=function(o){_sg(o);if(G&&/#wod/.test(location.hash)&&!(NET.role==='guest')&&G.phase!=='wod'){G.tut=null;startWod()}}}
+{const _sg=startGame;startGame=function(o){_sg(o);if(G&&/#wod/.test(location.hash)&&!(NET.role==='guest')&&G.phase!=='wod'){G.tut=null;wodIntro()}}}
 {const _s=startWod;startWod=function(){_s();GH_D.gx=GH_D.mx=null;try{G.ghost=wodGhostFor(G.cat)}catch(e){G.ghost=null}}}
 {const _u=updWod;updWod=function(dt){
   const w=G.wod;if(!w)return _u(dt);const c=G.cat,ph0=w.ph;
