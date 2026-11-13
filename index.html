@@ -513,6 +513,7 @@ html.pseudofs,html.pseudofs body{height:100%;overflow:hidden;background:#000}
         <nav class="hub lvlpick">
           <button class="hbtn" type="button" data-lvl="1"><span class="gtxt">DE CAMINO AL LYNX</span><small>Nivel 1</small></button>
           <button class="hbtn" type="button" data-lvl="2"><span class="gtxt">LYNX SOCIAL TRAINING CLUB</span><small>Nivel 2</small></button>
+          <button class="hbtn" type="button" data-lvl="3"><span class="gtxt">FITNESS CHALLENGE LEAGUE</span><small>Nivel 3</small></button>
           <button class="hbtn" type="button" data-lvl="F"><span class="gtxt">LEVEL WOD</span><small>El WOD de la KickAss Games</small></button>
         </nav>
         <div class="mnav"><button type="button" class="nbtn" data-go="mode">&#9664; VOLVER</button></div>
@@ -4231,6 +4232,25 @@ SMP_B64.l3_cono='SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//O
 // el headjudge grita «¡NO REP!» con voz cuando le sale el bocadillo (sin pisarse si hay varios)
 {const _f=faguShout;faguShout=function(e,txt){const s0=e.shoutTxt,t0=e.shout;_f(e,txt);
   if(e.type==='hj'&&e.shoutTxt==='¡NO REP!'&&(e.shout!==t0||e.shoutTxt!==s0)&&G.run-(G.hjNrT||-9)>1.2){G.hjNrT=G.run;smpPlay('l3_norep',.9,rr(.96,1.04));musicDuck(.5,800)}}}
+
+/* ===== NIVEL 3 EN EL JUEGO: «Elegir nivel» y modo historia (nivel 1 → nivel 2 → nivel 3 → Level WOD) =====
+   En partidas online se mantiene el recorrido de antes (nivel 2 → Level WOD) hasta probar el nivel 3 con dos móviles. */
+const l3Story=()=>PLAY.mode==='story'&&!NET.on;
+// elegir nivel → nivel 3: escena del portal y a la playa
+{const _sg=startGame;startGame=function(o){_sg(o);if(!G||NET.role==='guest'||/nivel[23]|#wod/.test(location.hash))return;
+  if(PLAY.mode==='lvl'&&PLAY.start==='3'){G.tut=null;loadGroup('l3');cut2Play(()=>setLevel3(),'l3')}}}
+// historia: las imágenes del nivel 3 se van bajando mientras se juega el nivel 2
+{const _s=setLevel;setLevel=function(n){_s(n);if(n===2&&l3Story())setTimeout(()=>{try{loadGroup('l3')}catch(e){}},6000)}}
+// al salir del box (fin del nivel 2) se cruza el portal hacia la Costa Brava
+{const _eb=enterBox;enterBox=function(){if(l3Story()&&G.lvl===2&&!G.over){G.ath.forEach(a=>{if(ATH_DOWN.has(a.st)){a.st='idle';a.hp=Math.max(a.hp,30);a.x=G.ath[0].x-40}});G.phase='fade3';G.fade=0;return}_eb()}}
+{const _up=update;update=function(dt){
+  if(G&&G.phase==='fade3'){G.fade+=dt/.7;updFx(dt);G.ath[0].st='walk';G.ath[0].ph+=dt*9;G.ath[0].x+=dt*40;if(G.fade>=1){G.phase='street';G.fade=0;loadGroup('l3');cut2Play(()=>setLevel3(),'l3')}return}
+  // fin del nivel 3 en la historia: escena del portal de vuelta al Lynx y Level WOD
+  if(G&&G.phase==='fade'&&G.lvl===3&&l3Story()){if(G.l3wod)return;G.fade+=dt/.7;updFx(dt);G.ath[0].st='walk';G.ath[0].ph+=dt*9;G.ath[0].x+=dt*40;if(G.fade>=1){G.l3wod=1;cut2Play(()=>startWod(),'wod')}return}
+  _up(dt)}}
+{const _dr=draw;draw=function(){_dr();if(G&&G.phase==='fade3'){ctx.setTransform(K,0,0,K,0,0);ctx.fillStyle='rgba(0,0,0,'+clamp(G.fade,0,1)+')';ctx.fillRect(0,0,W,H)}}}
+// el rótulo del menú con letras, cuando exista la imagen g_nivel3
+{const el=$('#menu [data-lvl="3"] .gtxt');if(el&&TXT_IMG.g_nivel3)el.outerHTML='<img class="wimg" alt="Fitness Challenge League" src="'+TXT_IMG.g_nivel3+'">'}
 
 /* ===== RENDIMIENTO: carga por niveles, precalentado de texturas y memoria ===== */
 // qué grupo de imágenes necesita el nivel en curso
