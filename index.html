@@ -4317,7 +4317,7 @@ function drawWodScene(g,w,c){
   T(g,'WOD EN PAREJA · '+c.name.toUpperCase(),bx+82,by+43,F_D(8),'#c0142e','center');
   const L=[[w.sn.tot+' SNATCH 80 KG',w.sn.n,w.sn.tot,0],[w.mu.tot+' MUSCLE-UPS',w.mu.n,w.mu.tot,1],[w.hs.tot+' M HANDSTAND',Math.floor(w.hs.d),w.hs.tot,2]];
   if(w.bk)L.push([w.bk.tot+' CAL BIKE',Math.floor(w.bk.cal),w.bk.tot,3]);
-  L.forEach((l,i)=>{const done=w.ph>l[3],cur=w.ph===l[3],col=done?'#1a8f4a':cur?'#0b2a6b':'#8a8a99',y=by+56+i*14,lb=cur?'▶ '+['SNATCH 80 KG','MUSCLE-UPS','HANDSTAND','BIKE'][i]:(done?'✓ ':'')+l[0];T(g,fitText(g,lb,F_U(12),cur?100:146),bx+10,y,F_U(12),col);if(cur)T(g,l[1]+'/'+l[2]+(i===2?' m':i===3?' cal':''),bx+160,y,F_U(13),'#c0142e','right')});
+  L.forEach((l,i)=>{const done=w.ph>l[3],cur=w.ph===l[3],col=done?'#1a8f4a':cur?'#0b2a6b':'#8a8a99',y=by+56+i*14,lb=cur?'▶ '+['SNATCH 80 KG','MUSCLE-UPS','HANDSTAND','BIKE'][i]:(done?'✓ ':'')+l[0];T(g,fitText(g,lb,F_U(12),cur?(i===3?100:112):146),bx+10,y,F_U(12),col);if(cur)T(g,l[1]+'/'+l[2]+(i===2?' m':i===3?' cal':''),bx+162,y,F_U(13),'#c0142e','right')});
   // material de decoración al fondo
   const P=[['kb',2,46],['box',196,34],['rope',405,26],['ball',433,20],['bike',452,40]];
   for(const [k,x,wd] of P){const [iw,ih]=WOD_M[k],hh=wd*ih/iw;wImg(g,k,x,214-hh,wd,hh)}
