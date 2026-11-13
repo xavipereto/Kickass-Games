@@ -2633,7 +2633,7 @@ function drawEntity(g,e){
     if(!G.talk&&!G.cont){const L=G.ath[0];if(L!==e){const near=Math.abs(L.x-e.x)<46&&Math.abs(L.y-e.y)<20;drawBtnPrompt(g,x,y-62,near?'¡LEVÁNTALO!'.replace('LO!',isFemAth(e)?'LA!':'LO!'):'ACÉRCATE Y PULSA')}}}
   if(e.kind==='ath'&&e===G.swapA&&e.st==='hifive'&&e.t>.38){const a=clamp((.95-e.t)*5,0,1),pop=1+Math.max(0,.5-e.t)*2.5,mx=Math.round((e.x+G.swapB.x)/2);if(!drawTxt(g,'t_igo',mx,Math.round(e.y-118),30,a,pop))drawBubble(g,'¡I GO, YOU GO!',mx,Math.round(e.y-100-e.z),e.face,1.25-(e.t-.3))}
   if(e.kind==='ath'&&e===G.tocaE&&G.tocaT>0){G.tocaT-=1/60;drawTxt(g,'t_tetoca',Math.round(e.x),Math.round(e.y-(e._top!=null?e.y-e._top:80)-30-(1.1-G.tocaT)*14),18,clamp(G.tocaT*2.5,0,1))}
-  if(e.kind==='ath'&&e.lead&&e.st==='grab'){const a=.6+.4*Math.sin(G.run*10);g.globalAlpha=a;T(g,(app.classList.contains('touch')||tutPadMode())?'Y = ¡KICK ASS!':'X = ¡KICK ASS!',Math.round(e.x+e.face*20),Math.round(e.y-104),F_D(11),'#ff2bd6','center','#14060f');g.globalAlpha=1}
+  if(e.kind==='ath'&&e.lead&&e.st==='grab'){const a=.6+.4*Math.sin(G.run*10);g.globalAlpha=a;T(g,(app.classList.contains('touch')||tutPadMode())?'X / Y = ¡KICK ASS!':'Z / X = ¡KICK ASS!',Math.round(e.x+e.face*20),Math.round(e.y-104),F_D(11),'#ff2bd6','center','#14060f');g.globalAlpha=1}
   if(e.kind==='ath'&&e.lead){const y=Math.round((e._top!=null?Math.min(e._top,e.y-72):e.y-72)-14+Math.sin(G.run*6)*1.5);g.fillStyle='#ffd23f';g.fillRect(Math.round(e.x)-4,y,8,2);g.fillRect(Math.round(e.x)-3,y+2,6,2);g.fillRect(Math.round(e.x)-2,y+4,4,2);g.fillRect(Math.round(e.x)-1,y+6,2,2)}
 }
 function drawProj(g,p){
@@ -4022,7 +4022,9 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
   else if(a.jpR==='dance'){if(t>=JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null}}
   else if(a.jpR==='throw'){if(t>=.07&&!a.done){a.done=true;jpNote(a)}if(t>=JP_THROW){a.st='idle';a.t=0;a.jpR=null}}}}
 // en modo fiesta, el botón de barra lanza notas (también la pareja)
-{const _a=startAtk;startAtk=function(a){if(jpOn()&&G.jp.n>0&&!a.carry){a.st='buy';a.t=0;a.done=false;a.jpR='throw';return}return _a(a)}}
+// cerca de un enemigo (bailando o no) se pega con la barra como siempre; de lejos, nota
+function jpNearFoe(a){return G.en.some(e=>!e.dead&&e.st!=='dying'&&e.st!=='kdown'&&Math.abs(e.y-a.y)<18&&(e.x-a.x)*(a.face||1)>-12&&Math.abs(e.x-a.x)<62)}
+{const _a=startAtk;startAtk=function(a){if(jpOn()&&G.jp.n>0&&!a.carry&&!jpNearFoe(a)){a.st='buy';a.t=0;a.done=false;a.jpR='throw';return}return _a(a)}}
 /* --- notas, tiempo de la fiesta y cabina como obstáculo --- */
 {const _u=updStreet;updStreet=function(dt){_u(dt);if(!jpOn()||G.phase!=='street')return;const J=G.jp;
   for(const a of G.ath)if(Math.abs(a.x-JP_X)<52&&a.y<JP_Y+10)a.y=JP_Y+10; // no se puede pasar por detrás de la mesa
