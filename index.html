@@ -3981,24 +3981,33 @@ function eliteVoice(e,kill){if(!/^(e[1-5])$/.test(e.type)||e.clone&&!kill)return
 {const _h=hurtE;hurtE=function(e,dmg,dir,kd,kb){const hp=e.hp,r=_h(e,dmg,dir,kd,kb);if(e.hp<hp&&e.hp>0&&e.st!=='dying')eliteVoice(e,false);return r}}
 {const _k=killE;killE=function(e,dir){if(!e.vk){e.vk=1;eliteVoice(e,true)}return _k(e,dir)}}
 /* ===== NIVEL 3: JOANPI, el DJ de la FCL =====
-   Su cabina (carpa + mesa con faldón) está en la pista. Pulsas junto a ella y le chocas la mano: brillo multicolor, baile
-   y MODO FIESTA: durante JP_T s el botón de barra lanza notas musicales que ponen a bailar a los competidores.
+   Su cabina (carpa + mesa con faldón) está en la pista. Al acercaros sale de la cabina, os habla por el micro, os señala
+   y espera a que le choquéis la mano: brillo multicolor, baile (él lo celebra y vuelve a pinchar) y MODO FIESTA: durante JP_T s el botón de barra lanza notas musicales que ponen a bailar a los competidores.
    Los jefes son inmunes. Joanpi sale una sola vez. */
-const JPD={"u":0.5,"fr":{"tent":{"t":[[0,0,350,235,175.0,235,0]]},"joanpi":{"dj":[[352,0,125,124,62.3,124.4,0],[479,0,125,124,62.3,124.4,0],[606,0,125,124,62.3,124.4,0]]},"table":{"t":[[733,0,168,55,84.0,55,0]]},"k2":{"dance":[[201,0,99,189,47.1,189.0,1],[1081,0,122,182,72.1,182.5,1],[860,0,119,185,98.0,184.8,1],[758,0,100,186,49.8,185.6,1],[302,0,95,189,34.3,189.0,1],[399,0,121,189,68.6,189.0,1],[630,0,126,187,105.3,187.5,1],[0,0,103,191,54.1,191.4,1]]},"k1":{"dance":[[105,0,94,190,46.0,189.7,1],[1407,0,102,181,55.5,180.5,1],[1718,0,118,180,105.9,179.7,1],[981,0,98,185,46.8,185.3,1],[1511,0,96,181,56.5,180.9,1],[1609,0,107,181,47.5,180.9,1],[1295,0,110,182,13.4,181.7,1],[522,0,106,189,48.7,189.3,1]]},"k3":{"dance":[[1205,0,88,182,46.8,182.0,1],[109,193,108,174,66.7,173.9,1],[443,193,107,173,93.1,173.4,1],[219,193,109,174,67.6,174.3,1],[1838,0,82,176,53.9,175.6,1],[330,193,111,174,68.9,174.3,1],[1922,0,117,176,94.7,175.6,1],[0,193,107,175,51.4,175.1,1]]},"atl_dumb":{"jp":[[1731,193,108,143,60.4,143.1,1],[1102,193,131,146,60.5,146.1,1],[1841,193,117,142,65.2,142.0,1],[552,193,89,163,41.3,162.5,1],[1402,370,86,125,41.0,124.9,1],[0,370,118,142,64.2,142.4,1],[120,370,103,141,49.5,140.9,1],[839,193,95,157,50.5,156.6,1]]},"atl_bar":{"jp":[[422,370,94,135,51.4,135.3,1],[518,370,114,135,51.5,135.3,1],[634,370,104,135,57.7,134.9,1],[1235,193,83,146,38.8,145.6,1],[1568,370,86,117,44.6,116.6,1],[225,370,94,137,51.1,137.1,1],[321,370,99,137,53.1,136.8,1],[643,193,101,161,53.9,160.7,1]]},"atl_ball":{"jp":[[1392,193,104,143,57.6,143.1,1],[1498,193,118,143,58.4,142.8,1],[1618,193,111,143,61.8,143.1,1],[936,193,62,156,28.2,156.1,1],[1490,370,76,121,36.4,121.0,1],[838,370,102,132,42.3,131.5,1],[740,370,96,134,55.9,133.6,1],[746,193,91,157,47.4,156.8,1]]},"atl_f":{"jp":[[1233,370,81,127,41.4,126.5,1],[1121,370,110,128,42.3,128.2,1],[1316,370,84,126,39.8,126.2,1],[1320,193,70,144,34.2,143.9,1],[1656,370,67,116,29.7,116.4,1],[942,370,87,129,41.6,129.2,1],[1031,370,88,129,46.6,129.2,1],[1000,193,100,152,52.4,152.4,1]]}}};
+const JPD={"u":0.5,"fr":{"tent":{"t":[[0,0,350,235,175.0,235,0]]},"joanpi":{"body":[[461,0,86,165,45.0,164.9,0],[549,0,87,165,39.2,164.9,0],[270,237,85,160,41.0,160.2,0],[1832,0,91,163,39.9,163.1,0],[848,0,89,164,46.5,164.3,0],[939,0,96,164,43.6,164.3,0],[1925,0,96,163,50.2,163.1,0],[1037,0,104,164,51.7,163.7,0],[638,0,98,165,48.2,164.6,0],[0,237,107,163,54.1,163.4,0],[352,0,107,168,54.5,167.7,0],[109,237,159,163,76.0,163.4,0],[1143,0,89,164,41.3,164.3,0],[738,0,108,165,48.3,164.9,0],[1234,0,91,164,47.6,163.7,0],[1327,0,128,164,54.9,163.7,0],[1457,0,127,164,51.7,164.0,0],[1586,0,116,164,45.5,164.0,0],[1704,0,126,164,48.6,164.0,0]],"dj":[[357,237,125,124,62.3,124.4,0],[484,237,125,124,62.3,124.4,0],[611,237,125,124,62.3,124.4,0],[738,237,125,124,62.3,124.4,0]]},"table":{"t":[[865,237,168,55,84.0,55,0]]},"k2":{"dance":[[201,0,99,189,47.1,189.0,1],[1081,0,122,182,72.1,182.5,1],[860,0,119,185,98.0,184.8,1],[758,0,100,186,49.8,185.6,1],[302,0,95,189,34.3,189.0,1],[399,0,121,189,68.6,189.0,1],[630,0,126,187,105.3,187.5,1],[0,0,103,191,54.1,191.4,1]]},"k1":{"dance":[[105,0,94,190,46.0,189.7,1],[1407,0,102,181,55.5,180.5,1],[1718,0,118,180,105.9,179.7,1],[981,0,98,185,46.8,185.3,1],[1511,0,96,181,56.5,180.9,1],[1609,0,107,181,47.5,180.9,1],[1295,0,110,182,13.4,181.7,1],[522,0,106,189,48.7,189.3,1]]},"k3":{"dance":[[1205,0,88,182,46.8,182.0,1],[109,193,108,174,66.7,173.9,1],[443,193,107,173,93.1,173.4,1],[219,193,109,174,67.6,174.3,1],[1838,0,82,176,53.9,175.6,1],[330,193,111,174,68.9,174.3,1],[1922,0,117,176,94.7,175.6,1],[0,193,107,175,51.4,175.1,1]]},"atl_dumb":{"jp":[[1731,193,108,143,60.4,143.1,1],[1102,193,131,146,60.5,146.1,1],[1841,193,117,142,65.2,142.0,1],[552,193,89,163,41.3,162.5,1],[1402,370,86,125,41.0,124.9,1],[0,370,118,142,64.2,142.4,1],[120,370,103,141,49.5,140.9,1],[839,193,95,157,50.5,156.6,1]]},"atl_bar":{"jp":[[422,370,94,135,51.4,135.3,1],[518,370,114,135,51.5,135.3,1],[634,370,104,135,57.7,134.9,1],[1235,193,83,146,38.8,145.6,1],[1568,370,86,117,44.6,116.6,1],[225,370,94,137,51.1,137.1,1],[321,370,99,137,53.1,136.8,1],[643,193,101,161,53.9,160.7,1]]},"atl_ball":{"jp":[[1392,193,104,143,57.6,143.1,1],[1498,193,118,143,58.4,142.8,1],[1618,193,111,143,61.8,143.1,1],[936,193,62,156,28.2,156.1,1],[1490,370,76,121,36.4,121.0,1],[838,370,102,132,42.3,131.5,1],[740,370,96,134,55.9,133.6,1],[746,193,91,157,47.4,156.8,1]]},"atl_f":{"jp":[[1233,370,81,127,41.4,126.5,1],[1121,370,110,128,42.3,128.2,1],[1316,370,84,126,39.8,126.2,1],[1320,193,70,144,34.2,143.9,1],[1656,370,67,116,29.7,116.4,1],[942,370,87,129,41.6,129.2,1],[1031,370,88,129,46.6,129.2,1],[1000,193,100,152,52.4,152.4,1]]}}};
 const JP_X=1580,JP_Y=214,JP_T=20,JP_HF=.75,JP_DANCE=2,JP_POSE=.4,JP_THROW=.3,JP_EN_DANCE=4,JP_BOSS=new Set(['bri','edu','buti']);
 const JP_DSEQ=[3,4,3,4,5,6,5,6]; // fotogramas del baile: brazos arriba, sentadilla, brazos a un lado y al otro
 const JPI=['assets/jp_stage.webp','assets/jp_dance.webp'].map(p=>lazyImg('l3',p));
+PORTRAITS.joanpi={img:'assets/jp_port.webp',w:112.5,h:150,n:4,expr:true};PORT_IMG.joanpi=lazyImg('l3',PORTRAITS.joanpi.img);
+TALKS.joanpi={name:'JOANPI',pages:[
+  {e:0,txt:'¡Atención, Costa Brava! ¡Un fuerte aplauso para la pareja que se acaba de colar en la pista!'},
+  {by:'lead',txt:'Eh… ¿nos está hablando a nosotros?'},
+  {e:0,txt:'¡Claro que sí! Aquí el que pone la música soy yo… ¡y el ritmo también!'},
+  {by:'part',txt:'Pues nos hará falta algo más que ritmo. Esto está lleno de competidores con malas pulgas.'},
+  {e:0,txt:'Chocadme esos cinco y veréis lo que pasa cuando suena mi música. ¡Aquí no se resiste nadie!'}]};
+const JP_SPD=62,JP_HOME=[JP_X+52,JP_Y+2],JP_SPOT=[JP_X+4,JP_Y+32];
 const jpOk=i=>JPI[i].complete&&JPI[i].naturalWidth;
 for(let i=B3_PROPS.length-1;i>=0;i--)if(Math.abs(B3_PROPS[i][1]-JP_X)<110)B3_PROPS.splice(i,1); // deja sitio para la carpa
-{const _s=setLevel3;setLevel3=function(){_s();G.jp={used:false,n:0,hfT:-9,sp:0};G.jpNotes=[]}}
+{const _s=setLevel3;setLevel3=function(){_s();G.jp={used:false,n:0,hfT:-9,sp:0,sc:'booth',t:0,x:JP_HOME[0],y:JP_HOME[1],face:-1,side:-1,e:null};G.jpNotes=[]}}
 const jpOn=()=>!!(G&&G.lvl===3&&G.jp);
 const jpCol=h=>'hsl('+Math.round(((h%360)+360)%360)+',100%,62%)';
 function jpBlit(g,img,f,x,y,flip){const u=JPD.u;g.save();g.translate(Math.round(x),Math.round(y));if(flip)g.scale(-1,1);g.drawImage(img,f[0],f[1],f[2],f[3],-f[4]*u,-f[5]*u,f[2]*u,f[3]*u);g.restore()}
 /* --- chocar la mano: usa la misma acción que el puesto/cafetería (botón de barra junto a la cabina) --- */
-function nearJP(a){return jpOn()&&!G.jp.used&&(a.lead||a.human)&&!a.carry&&Math.abs(a.x-(JP_X-40))<62&&a.y<JP_Y+46}
+function nearJP(a){const J=jpOn()&&G.jp;if(!J||J.used||J.sc!=='wait'||!(a.lead||a.human)||a.carry)return false;const side=a.x<J.x?-1:1;
+  return Math.abs(a.x-(J.x+side*40))<56&&Math.abs(a.y-J.y)<30}
 {const _n=nearStand;nearStand=function(a){if(G&&G.lvl===3)return nearJP(a);return _n(a)}}
-{const _s=startBuy;startBuy=function(a){if(!(G&&G.lvl===3))return _s(a);G.jp.used=true;
-  a.st='buy';a.t=0;a.done=false;a.jpR='hf';a.face=1;a.x=JP_X-46;a.y=Math.max(a.y,JP_Y+12);a.vx=a.vy=0;SFX.pick()}}
+{const _s=startBuy;startBuy=function(a){if(!(G&&G.lvl===3))return _s(a);const J=G.jp;J.used=true;J.sc='hf';J.t=0;
+  const side=a.x<J.x?-1:1;J.side=side;J.face=side;a.st='buy';a.t=0;a.done=false;a.jpR='hf';a.face=-side;a.x=J.x+side*40;a.y=J.y;a.vx=a.vy=0;SFX.pick()}}
 function jpParty(){G.jp.n=JP_T;bigMsg('¡MODO FIESTA!',1.8);SFX.perfect();G.shake=Math.max(G.shake,.2);
   for(const p of G.ath){ring(p.x,p.y-40,70);burst(p.x,p.y-50,22,jpCol(Math.random()*360),220);
     if(athUp(p)&&p.st!=='buy'&&!p.carry){p.st='buy';p.t=0;p.jpR='dance';p.vx=p.vy=0}}} // la pareja también se pone a bailar
@@ -4006,9 +4015,9 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
 {const _u=updBuy;updBuy=function(a,dt){if(!(G&&G.lvl===3&&a.jpR))return _u(a,dt);const t=a.t;a.vx=a.vy=0;
   if(a.jpR!=='throw')a.inv=Math.max(a.inv||0,.1); // nadie te pega mientras chocas y bailas
   if(a.jpR==='hf'){
-    if(t>=.2&&!a.done){a.done=true;G.jp.hfT=G.run;const hx=JP_X-24,hy=a.y-66;burst(hx,hy,18,'#ffd23f',220);ring(hx,hy,34);
+    if(t>=.2&&!a.done){a.done=true;G.jp.hfT=G.run;const hx=(a.x+G.jp.x)/2,hy=a.y-66;burst(hx,hy,18,'#ffd23f',220);ring(hx,hy,34);
       G.shake=Math.max(G.shake,.15);G.hitstop=.06;SFX.hit();ftext(hx,hy-16,'¡CHOCA ESOS CINCO!','#ffd23f',11)}
-    if(t>=JP_HF&&!a.party){a.party=true;jpParty()}
+    if(t>=JP_HF&&!a.party){a.party=true;jpParty();G.jp.sc='cel';G.jp.t=0}
     if(t>=JP_HF+JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null;a.party=false}}
   else if(a.jpR==='dance'){if(t>=JP_DANCE+JP_POSE){a.st='idle';a.t=0;a.jpR=null}}
   else if(a.jpR==='throw'){if(t>=.07&&!a.done){a.done=true;jpNote(a)}if(t>=JP_THROW){a.st='idle';a.t=0;a.jpR=null}}}}
@@ -4017,6 +4026,7 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
 /* --- notas, tiempo de la fiesta y cabina como obstáculo --- */
 {const _u=updStreet;updStreet=function(dt){_u(dt);if(!jpOn()||G.phase!=='street')return;const J=G.jp;
   for(const a of G.ath)if(Math.abs(a.x-JP_X)<52&&a.y<JP_Y+10)a.y=JP_Y+10; // no se puede pasar por detrás de la mesa
+  if(!G.talk)jpScene(dt);
   if(J.n>0){J.n=Math.max(0,J.n-dt);if(J.n===0)ftext(G.ath[0].x,G.ath[0].y-80,'SE ACABÓ LA FIESTA','#ff7ad9',10);
     J.sp-=dt;if(J.sp<=0){J.sp=.08;for(const a of G.ath)if(athUp(a))burst(a.x+rr(-14,14),a.y-rr(20,80),1,jpCol(Math.random()*360),50)}}
   const N=G.jpNotes;for(let i=N.length-1;i>=0;i--){const n=N[i];n.t+=dt;n.x+=n.vx*dt;let hit=false;
@@ -4029,6 +4039,35 @@ function jpNote(a){G.jpNotes.push({x:a.x+a.face*26,y:a.y,z:58,vx:a.face*310,t:0,
 {const _u=updJudge;updJudge=function(e,dt){if(e.st!=='dance')return _u(e,dt);
   e.t+=dt;e.bobT=(e.bobT||0)+dt;e.flash=Math.max(0,(e.flash||0)-dt);e.inv=Math.max(0,(e.inv||0)-dt);e.shout=0;e.vx=e.vy=0;
   if(e.t>=e.danceT){e.st='walk';e.t=0;e.cd=Math.max(e.cd||0,.6)}}}
+/* --- la escena: sale de la cabina → micro → señala → espera el choque → celebra → vuelve a pinchar --- */
+function jpWalk(J,tx,ty,dt){const dx=tx-J.x,dy=ty-J.y,d=Math.hypot(dx,dy);if(d<2){J.x=tx;J.y=ty;J.walk=false;return true}
+  const k=Math.min(1,JP_SPD*dt/d);J.x+=dx*k;J.y+=dy*k;J.walk=true;if(Math.abs(dx)>1)J.face=dx>0?1:-1;J.wT=(J.wT||0)+dt;return false}
+function jpScene(dt){const J=G.jp,L=G.ath[0];J.t+=dt;
+  switch(J.sc){
+    case 'booth':if(L&&L.x>JP_X-260&&G.cam>JP_X-470&&!G.en.some(e=>!e.dead&&e.st!=='dying')){J.sc='out';J.t=0;J.e={kind:'joanpi',x:J.x,y:J.y,hp:0,bt:-1};G.crates.push(J.e)}break;
+    case 'out':{const down=Math.abs(J.y-JP_SPOT[1])>2;if(down)jpWalk(J,JP_HOME[0],JP_SPOT[1],dt);else if(jpWalk(J,JP_SPOT[0],JP_SPOT[1],dt)){J.face=L&&L.x>J.x?1:-1;J.sc='talk';J.t=0;startTalk('joanpi')}}break;
+    case 'talk':J.sc='point';J.t=0;J.face=L&&L.x>J.x?1:-1;SFX.pick();break; // el diálogo ya ha terminado (mientras dura, la escena está en pausa)
+    case 'point':if(J.t>1.1){J.sc='wait';J.t=0}break;
+    case 'wait':J.face=L&&L.x>J.x?1:-1;break;
+    case 'cel':if(J.t>JP_DANCE+JP_POSE+.2){J.sc='back';J.t=0}break;
+    case 'back':{const right=Math.abs(J.x-JP_HOME[0])>2;if(right)jpWalk(J,JP_HOME[0],J.y,dt);else if(jpWalk(J,JP_HOME[0],JP_HOME[1],dt)){J.sc='done';G.crates=G.crates.filter(c=>c!==J.e);J.e=null}}break;
+  }
+  if(J.e){J.e.x=J.x;J.e.y=J.y}}
+const JP_TALKING=()=>{const k=G.talk;if(!k||k.who!=='joanpi')return false;const pg=TALKS.joanpi.pages[k.pg];return !pg.by&&k.t<pgTxt(pg).length/TALK_CPS+.2};
+function jpBodyFrame(J){const t=J.t;
+  if(J.walk)return [0,1,2,3,4,5][Math.floor((J.wT||0)*8)%6];
+  switch(J.sc){
+    case 'talk':return JP_TALKING()?12+[1,2,3,1][Math.floor(G.run*5)%4]:12;
+    case 'point':return t<.15?16:t<.3?17:18;
+    case 'wait':return Math.floor(G.run*6)%8;
+    case 'hf':{const A=G.ath.find(a=>a.st==='buy'&&a.jpR==='hf'),lt=A?A.t:1;return lt<.18?9:lt<.5?11:10}
+    case 'cel':return [8,9,10,11,10,9][Math.floor(t*5)%6];
+    default:return 0}}
+{const _d=drawEntity;drawEntity=function(g,e){if(e.kind!=='joanpi')return _d(g,e);const J=G.jp;if(!J||!jpOk(0))return;
+  const f=JPD.fr.joanpi.body[jpBodyFrame(J)];g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.ellipse(Math.round(J.x),Math.round(J.y),17,5,0,0,7);g.fill();
+  g.imageSmoothingQuality=ISQ;jpBlit(g,JPI[0],f,J.x,J.y,J.face<0);
+  if(J.sc==='point'&&J.t>.2)drawBubble(g,'¡VOSOTROS! ¡CHOCAD ESOS CINCO!',J.x,Math.round(J.y-100),J.face,bubLife(1.1-J.t+.2,1.1));
+  const L=G.ath[0];if(L&&nearJP(L)){g.globalAlpha=.6+.4*Math.sin(G.run*6);drawBtnPrompt(g,J.x,J.y-104,'CHOCA LA MANO');g.globalAlpha=1}}}
 /* --- dibujo --- */
 function jpFrame(o){const t=o.t||0;if(o.jpR==='throw')return 1;let d=t;
   if(o.jpR==='hf'){if(t<.18)return 0;if(t<.5)return 1;if(t<JP_HF)return 2;d=t-JP_HF}
@@ -4043,14 +4082,14 @@ function jpFrame(o){const t=o.t||0;if(o.jpR==='throw')return 1;let d=t;
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(e.x),Math.round(e.y),24,5,0,0,7);g.fill();
   jpBlit(g,JPI[1],f,e.x,e.y,(e.face||1)<0);
   if(e.hp<e.maxHp){const w=30;bar(g,Math.round(e.x-w/2),Math.round(e.y-96),w,4,e.hp/e.maxHp,'#ff9a1a','#10303a')}}}
-function jpDJFrame(){const J=G.jp,L=G.ath[0];if(L&&L.st==='buy'&&L.jpR==='hf'&&L.t<.6)return L.t>.06?1:0;if(G.run-J.hfT<.4)return 1;
-  if(!J.used&&L&&Math.abs(L.x-JP_X)<190)return Math.floor(G.run*2.5)%2?0:2; // saluda cuando te acercas
+function jpDJFrame(){const J=G.jp;if(J.sc!=='booth'&&J.sc!=='done')return 3; // 3 = mesa de mezclas sin Joanpi
+  const L=G.ath[0];if(J.sc==='booth'&&L&&Math.abs(L.x-JP_X)<420)return Math.floor(G.run*2.5)%2?0:2; // saluda cuando os ve llegar
   return 2}
 {const _d=drawBeachBG;drawBeachBG=function(g,cam){_d(g,cam);if(!jpOn()||!jpOk(0))return;const x=JP_X-cam;if(x<-130||x>W+130)return;
   const S=JPD.fr,u=JPD.u,te=S.tent.t[0],tb=S.table.t[0],th=tb[3]*u;g.imageSmoothingEnabled=true;g.imageSmoothingQuality=ISQ;
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(Math.round(x),JP_Y,tb[2]*u*.62,4,0,0,7);g.fill();
   jpBlit(g,JPI[0],te,x,JP_Y-10);jpBlit(g,JPI[0],tb,x,JP_Y);jpBlit(g,JPI[0],S.joanpi.dj[jpDJFrame()],x,JP_Y-th*.8);
-  const L=G.ath[0];if(L&&nearJP(L)){g.globalAlpha=.6+.4*Math.sin(G.run*6);drawBtnPrompt(g,x-30,JP_Y-104,'CHOCA LA MANO');g.globalAlpha=1}}}
+}}
 // brillo multicolor y tiempo que queda de fiesta
 function drawJPAura(g){if(!jpOn()||!(G.jp.n>0))return;for(const a of G.ath){if(!athUp(a))continue;const x=Math.round(a.x),y=Math.round(a.y-(a.z||0)),h=G.run*240+a.x;
   g.save();g.globalCompositeOperation='lighter';g.globalAlpha=.22+.1*Math.sin(G.run*14);g.fillStyle=jpCol(h);g.beginPath();g.ellipse(x,y-40,26,46,0,0,7);g.fill();
