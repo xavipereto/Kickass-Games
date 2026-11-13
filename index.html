@@ -1776,7 +1776,7 @@ function spawnWave(w){
     if(t==='e1'){if(typeof TALKS!=='undefined'&&TALKS.e1)startTalk('e1');e.x=G.cam+W-90;e.y=(FY0+FY1)/2;e.face=-1;e.cd=1.5}
     if(t==='chief'){startTalk('chief');e.x=G.cam+W-80;e.y=(FY0+FY1)/2;e.face=-1;e.inv=1.6;e.cd=1.6;bossSay(e,'s_speaker',1.6)} // entra a la vista, por la derecha
     G.en.push(e)});
-  G.lockX=G.cam;G.cleared=false;if(!G.talk)bigMsg(boss?'¡ROGER EL SPEAKER ENTRA EN PISTA!':list.includes('rower')?'¡LLEGA '+ROWER_NAME+'!':list.includes('e6')?'¡LLEGA '+JORDI_NAME+'!':list.includes('e1')?'¡'+E1_NAME+' ENTRA EN PISTA!':'¡NO REP A LA VISTA!',1.6);
+  G.lockX=G.cam;G.cleared=false;if(!G.talk)bigMsg(boss?'¡SPEAKER ENTRA EN PISTA!':list.includes('rower')?'¡LLEGA '+ROWER_NAME+'!':list.includes('e6')?'¡LLEGA '+JORDI_NAME+'!':list.includes('e1')?'¡'+E1_NAME+' ENTRA EN PISTA!':'¡NO REP A LA VISTA!',1.6);
 }
 function enterBox(){
   G.ath.forEach(a=>{if(ATH_DOWN.has(a.st)){a.st='idle';a.hp=Math.max(a.hp,30);a.x=G.ath[0].x-40}});
@@ -2415,7 +2415,7 @@ const TALKS={rower:{name:'EL ORGANIZADOR',pages:['Vaya, ya están estos en medio
   e1d:{name:'NARCISUS EL PERFECTO',pages:['Llevaba años mirándome… y nunca había visto a nadie más.','Id, la puerta es vuestra.','Pero apuntadme a mí también, que ya lo tengo todo…']},
   e1du:{name:'NARCISUS EL PERFECTO',pages:['¡Os vais a enterar! Vais a ver mis DU de técnica perfecta. Soy el único capaz de hacer 200 saltos seguidos, nadie me ha superado jamás.',
     '¡Ahora me admiraréis a latigazos!']},
-  chief:{name:'ROGER EL SPEAKER',pages:['¡Sube ese volumen! Habéis llegado lejos… ¡Pero aquí el que manda en la pista soy yo!','Si creéis que sois capaces de venir a la KickAss Games, tenéis que pasar por las peores pesadillas de una competición: ¡lluvia y sol intenso!','¡Aquí tenéis mi level WOD particular, novatos!']}};
+  chief:{name:'SPEAKER',pages:['¡Sube ese volumen! Habéis llegado lejos… ¡Pero aquí el que manda en la pista soy yo!','Si creéis que sois capaces de venir a la KickAss Games, tenéis que pasar por las peores pesadillas de una competición: ¡lluvia y sol intenso!','¡Aquí tenéis mi level WOD particular, novatos!']}};
 function startTalk(who){if(!PORTRAITS[portKey(who)]||!TALKS[who]||(G.talked&&G.talked[who]))return;(G.talked=G.talked||{})[who]=1;G.talk={who,t:0,out:-1,pg:0};musicDuck(.35,6000);smpPlay('aum',.7,.9)}
 const TALK_CPS=34; // letras por segundo
 const pgTxt=pg=>typeof pg==='string'?pg:pg.txt,pgBy=pg=>typeof pg==='string'?null:(pg.by||null);
@@ -2871,7 +2871,7 @@ function drawHUD(g){
     bar(g,x,y-1,w,7,hp,hp>.5?'#ff9a1a':hp>.25?'#ff6a1a':(Math.floor(G.run*6)%2?'#fff':'#ff2b2b'),'#10303a')}}
   // jefe final: barra grande con su nombre
   {const B=G.en&&G.en.find(e=>e.type==='chief'&&!e.dead);if(B){const w=Math.min(280,W-140),x=Math.round(W/2-w/2),y=H-22,hp=B.st==='dying'?0:B.hp/B.maxHp;
-    R(g,x-8,y-26,w+16,36,'rgba(4,14,26,.72)');{const m2=TXT_M.s_jefe;T(g,'ROGER EL SPEAKER',x,y-6,F_D(14),'#ffd23f','left','#04101a');if(!(m2&&drawTxt(g,'s_jefe',x+w-8*m2[0]/m2[1],y-10,16,1)))T(g,'JEFE FINAL',x+w,y-6,F_U(10),'#08C5C1','right')}
+    R(g,x-8,y-26,w+16,36,'rgba(4,14,26,.72)');{const m1=TXT_M.s_speaker,m2=TXT_M.s_jefe;if(!(m1&&drawTxt(g,'s_speaker',x+11*m1[0]/m1[1],y-11,22,1)))T(g,'SPEAKER',x,y-6,F_D(14),'#ffd23f','left','#04101a');if(!(m2&&drawTxt(g,'s_jefe',x+w-8*m2[0]/m2[1],y-10,16,1)))T(g,'JEFE FINAL',x+w,y-6,F_U(10),'#08C5C1','right')}
     bar(g,x,y-1,w,7,hp,hp>.6?'#ff4a6a':hp>.3?'#ff8a1a':(Math.floor(G.run*6)%2?'#fff':'#ff2b2b'),'#10303a')}}
   drawBossHUD(g);
   drawPolaroid(g);
